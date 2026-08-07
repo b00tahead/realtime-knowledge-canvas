@@ -65,6 +65,12 @@
   }
 }
 
+.readingOrder {
+  grid-column: 1 / -1;
+  font-variant-numeric: normal;
+  color: var(--rkc-color-text);
+}
+
 .cardActions {
   display: flex;
   flex-wrap: wrap;

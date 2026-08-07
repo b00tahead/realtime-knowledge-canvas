@@ -19,7 +19,14 @@ import {
   type DensityMode,
   type ThemeMode,
 } from "@rkc/design-system";
-import { createEmptyDocument, OBJECT_MODEL_VERSION } from "@rkc/object-model";
+import {
+  OBJECT_MODEL_VERSION,
+  createEmptyDocument,
+  createNote,
+  listInReadingOrder,
+  objectCount,
+  upsertObject,
+} from "@rkc/object-model";
 import { createCamera, ENGINE_NAME } from "@rkc/canvas-engine";
 import { createInitialOfflineStatus } from "@rkc/offline";
 import { PROTOCOL_VERSION } from "@rkc/sync-protocol";
@@ -40,9 +47,25 @@ export function App() {
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [announce, setAnnounce] = useState("");
 
-  const doc = useMemo(
-    () => createEmptyDocument("local-demo", "Personal research board"),
-    [],
+  const doc = useMemo(() => {
+    let d = createEmptyDocument("local-demo", "Personal research board");
+    d = upsertObject(
+      d,
+      createNote("Schema-validated notes live in @rkc/object-model", {
+        transform: { x: 0, y: 0, w: 240, h: 120 },
+      }),
+    );
+    d = upsertObject(
+      d,
+      createNote("Reading order follows spatial layout for a11y", {
+        transform: { x: 40, y: 160, w: 240, h: 120 },
+      }),
+    );
+    return d;
+  }, []);
+  const readingOrder = useMemo(
+    () => listInReadingOrder(doc).map((o) => o.a11y.name),
+    [doc],
   );
   const camera = useMemo(() => createCamera(), []);
   const offline = useMemo(() => createInitialOfflineStatus(), []);
@@ -114,6 +137,10 @@ export function App() {
                 <dd>v{OBJECT_MODEL_VERSION}</dd>
               </div>
               <div>
+                <dt>Objects</dt>
+                <dd>{objectCount(doc)}</dd>
+              </div>
+              <div>
                 <dt>Engine</dt>
                 <dd>{ENGINE_NAME}</dd>
               </div>
@@ -126,6 +153,12 @@ export function App() {
               <div>
                 <dt>Sync protocol</dt>
                 <dd>v{PROTOCOL_VERSION} (Slice 2)</dd>
+              </div>
+              <div>
+                <dt>Reading order</dt>
+                <dd className={styles.readingOrder}>
+                  {readingOrder.join(" → ")}
+                </dd>
               </div>
             </dl>
             <div className={styles.cardActions}>
