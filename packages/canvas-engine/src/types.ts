@@ -53,6 +53,14 @@ export interface EngineStats {
 
 export const PAINT_BUDGET_MS = 16 as const;
 
+/** Active canvas tool (host-owned UI typically drives this). */
+export type EngineTool = "select" | "note";
+
+export interface WorldPoint {
+  x: number;
+  y: number;
+}
+
 export interface EngineOptions {
   /** Host element; engine appends canvas + svg children. */
   container: HTMLElement;
@@ -63,4 +71,6 @@ export interface EngineOptions {
   maxZoom?: number;
   /** Called after each painted frame with stats */
   onStats?: (stats: EngineStats) => void;
+  /** Initial tool (default select). */
+  tool?: EngineTool;
 }

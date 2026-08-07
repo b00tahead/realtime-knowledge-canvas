@@ -13,9 +13,11 @@ export type {
   Camera,
   EngineOptions,
   EngineStats,
+  EngineTool,
   RenderRect,
   Vec2,
   ViewportSize,
+  WorldPoint,
 } from "./types.js";
 
 export {

@@ -108,6 +108,55 @@ export function updateObject(
   return upsertObject(doc, next, updatedAt);
 }
 
+/** Immutable translate — no-op if id missing. */
+export function moveObject(
+  doc: CanvasDocument,
+  id: ObjectId,
+  position: { x: number; y: number },
+  updatedAt = Date.now(),
+): CanvasDocument {
+  const existing = doc.objects[id];
+  if (!existing) return doc;
+  return updateObject(
+    doc,
+    id,
+    {
+      transform: {
+        ...existing.transform,
+        x: position.x,
+        y: position.y,
+      },
+    },
+    updatedAt,
+  );
+}
+
+/**
+ * Update note body text and re-derive a11y name from the new content.
+ * No-op if id missing or not a note.
+ */
+export function updateNoteText(
+  doc: CanvasDocument,
+  id: ObjectId,
+  text: string,
+  updatedAt = Date.now(),
+): CanvasDocument {
+  const existing = doc.objects[id];
+  if (!existing || existing.type !== "note") return doc;
+  const next = { ...existing, text };
+  return upsertObject(
+    doc,
+    {
+      ...next,
+      a11y: {
+        ...existing.a11y,
+        name: deriveA11yName(next),
+      },
+    },
+    updatedAt,
+  );
+}
+
 export function renameDocument(
   doc: CanvasDocument,
   title: string,

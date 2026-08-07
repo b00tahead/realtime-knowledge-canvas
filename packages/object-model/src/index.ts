@@ -65,9 +65,11 @@ export {
   listChildren,
   listObjects,
   listObjectsByType,
+  moveObject,
   objectCount,
   removeObject,
   renameDocument,
+  updateNoteText,
   updateObject,
   upsertObject,
 } from "./document.js";

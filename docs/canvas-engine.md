@@ -33,15 +33,22 @@ engine.setDocument(doc);
 engine.destroy();
 ```
 
-## Controls (spike)
+## Controls
 
 | Input | Action |
 |-------|--------|
 | Scroll wheel | Zoom toward cursor |
 | Space + drag | Pan |
 | Middle mouse drag | Pan |
-| Click object (SVG) | Select |
-| Click empty | Clear selection |
+| Click object | Select |
+| Drag object | Move (commit on pointer up) |
+| Double-click object | Edit request (host focuses inspector) |
+| Click empty (select tool) | Clear selection |
+| Click empty (note tool) | Place note at world point |
+| Delete / Backspace | Delete request for selection |
+| Escape (note tool) | Switch to select tool |
+
+Tools: `select` | `note` via `setTool()`.
 
 ## Performance
 
@@ -60,7 +67,8 @@ These are intentional for PR4; later PRs add LOD, spatial index, and incremental
 
 ## Public API (highlights)
 
-- `CanvasEngine` — lifecycle, `setDocument` / `setRects` / `setCamera`, stats
+- `CanvasEngine` — lifecycle, `setDocument` / `setRects` / `setCamera`, tools + selection
+- Callbacks: `setOnSelect`, `setOnTransformEnd`, `setOnEditRequest`, `setOnPlace`, `setOnDeleteRequest`
 - `createCamera`, `screenToWorld`, `worldToScreen`, `panByScreen`, `zoomAtScreen`
 - `cullRects`, `documentToRenderRects`, `createStressRects`
-- `PAINT_BUDGET_MS`, `EngineStats`
+- `PAINT_BUDGET_MS`, `EngineStats`, `EngineTool`

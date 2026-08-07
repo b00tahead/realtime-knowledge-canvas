@@ -7,7 +7,7 @@
 - [x] Object model package (Zod schemas, factories, reading order)
 - [x] Canvas engine spike (WebGL + SVG, pan/zoom, paint logging)
 - [x] Local persistence (IndexedDB + autosave)
-- [ ] Note tool + selection
+- [x] Note tool + selection
 - [ ] Keyboard + a11y navigation
 - [ ] Offline shell (service worker)
 - [ ] Perf fixtures (1k / 5k objects)

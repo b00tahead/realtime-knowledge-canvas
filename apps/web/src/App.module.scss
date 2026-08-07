@@ -79,6 +79,24 @@
   }
 }
 
+.textarea {
+  min-height: 5.5rem;
+  padding: var(--rkc-space-2) var(--rkc-control-padding-x);
+  border: 1px solid var(--rkc-color-border);
+  border-radius: var(--rkc-radius-sm);
+  background: var(--rkc-color-bg);
+  color: var(--rkc-color-text);
+  font: inherit;
+  font-size: var(--rkc-font-size-sm);
+  line-height: 1.4;
+  resize: vertical;
+
+  &:focus-visible {
+    outline: var(--rkc-focus-ring-width) solid var(--rkc-color-focus-ring);
+    outline-offset: var(--rkc-focus-ring-offset);
+  }
+}
+
 .cardActions {
   display: flex;
   flex-wrap: wrap;

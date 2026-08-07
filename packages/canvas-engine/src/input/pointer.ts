@@ -125,6 +125,14 @@ export class PointerController {
     this.el.addEventListener("contextmenu", this.onContextMenu);
   }
 
+  isSpaceDown(): boolean {
+    return this.spaceDown;
+  }
+
+  isPanning(): boolean {
+    return this.panning;
+  }
+
   destroy(): void {
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);

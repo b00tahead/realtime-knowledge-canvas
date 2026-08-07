@@ -45,7 +45,7 @@ Every object has:
 | Area | Functions |
 |------|-----------|
 | Factories | `createNote`, `createShape`, `createFrame`, `createConnector`, `createCitation`, `createSummary` |
-| Document | `createEmptyDocument`, `upsertObject`, `updateObject`, `removeObject`, `getObject`, `listObjects`, … |
+| Document | `createEmptyDocument`, `upsertObject`, `updateObject`, `moveObject`, `updateNoteText`, `removeObject`, `getObject`, `listObjects`, … |
 | Validate | `parseCanvasObject`, `parseCanvasDocument`, `isCanvasObject`, `validateDocumentGraph` |
 | A11y order | `listInReadingOrder`, `listTopLevelInReadingOrder`, `compareReadingOrder` |
 | Migrate | `migrateDocument` |

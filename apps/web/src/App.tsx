@@ -24,15 +24,21 @@ import {
   createNote,
   getObject,
   listInReadingOrder,
+  moveObject,
   objectCount,
+  removeObject,
   renameDocument,
+  updateNoteText,
   upsertObject,
   type CanvasDocument,
+  type NoteObject,
 } from "@rkc/object-model";
 import {
   ENGINE_NAME,
   PAINT_BUDGET_MS,
   type EngineStats,
+  type EngineTool,
+  type WorldPoint,
 } from "@rkc/canvas-engine";
 import {
   DEFAULT_LOCAL_CANVAS_ID,
@@ -63,7 +69,14 @@ const STRESS_OPTIONS = [
   { value: "5000", label: "Stress 5k" },
 ] as const;
 
+const TOOL_OPTIONS: { value: EngineTool; label: string }[] = [
+  { value: "select", label: "Select" },
+  { value: "note", label: "Note tool" },
+];
+
 const NOTE_COLORS = ["#f5d76e", "#7eb6ff", "#7dcea0", "#f5a3c7", "#c4a1ff", "#f0a06a"];
+const DEFAULT_NOTE_W = 220;
+const DEFAULT_NOTE_H = 120;
 
 function buildDemoDocument(): CanvasDocument {
   let d = createEmptyDocument(DEFAULT_LOCAL_CANVAS_ID, "Personal research board");
@@ -83,7 +96,7 @@ function buildDemoDocument(): CanvasDocument {
   );
   d = upsertObject(
     d,
-    createNote("Edits autosave to IndexedDB — reload to verify", {
+    createNote("Drag notes · double-click to edit · Del to delete", {
       transform: { x: 120, y: 260, w: 300, h: 130 },
       color: "#7dcea0",
     }),
@@ -114,14 +127,18 @@ export function App() {
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [announce, setAnnounce] = useState("");
   const [stress, setStress] = useState("0");
+  const [tool, setTool] = useState<EngineTool>("select");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stats, setStats] = useState<EngineStats | null>(null);
   const [doc, setDoc] = useState<CanvasDocument | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("loading");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [titleDraft, setTitleDraft] = useState("");
 
   const sessionRef = useRef<PersistenceSession | null>(null);
+  const noteEditorRef = useRef<HTMLTextAreaElement | null>(null);
   const offline = useMemo(() => createInitialOfflineStatus(), []);
 
   const commitDoc = useCallback(
@@ -158,6 +175,7 @@ export function App() {
         );
         if (!cancelled) {
           setDoc(loaded);
+          setTitleDraft(loaded.title);
           setLastSavedAt(loaded.updatedAt);
           setAnnounce(
             objectCount(loaded) > 0
@@ -171,7 +189,9 @@ export function App() {
           setBootError(message);
           setSaveStatus("error");
           // Fallback in-memory demo so the engine still works
-          setDoc(buildDemoDocument());
+          const fallback = buildDemoDocument();
+          setDoc(fallback);
+          setTitleDraft(fallback.title);
         }
       }
     })();
@@ -196,6 +216,17 @@ export function App() {
   const stressCount = stress === "0" ? null : Number(stress);
   const selected =
     doc && selectedId && !stressCount ? getObject(doc, selectedId) : undefined;
+  const selectedNote =
+    selected?.type === "note" ? (selected as NoteObject) : undefined;
+
+  // Sync note draft when selection changes (not on every keystroke of other fields)
+  useEffect(() => {
+    if (selectedNote) {
+      setNoteDraft(selectedNote.text);
+    } else {
+      setNoteDraft("");
+    }
+  }, [selectedNote?.id, selectedNote?.text]);
 
   const shellClass = [
     styles.app,
@@ -203,21 +234,72 @@ export function App() {
     densityClassName(density),
   ].join(" ");
 
+  const placeNoteAt = useCallback(
+    (world: WorldPoint) => {
+      if (!doc || stressCount) return;
+      const n = objectCount(doc);
+      const color = NOTE_COLORS[n % NOTE_COLORS.length]!;
+      const note = createNote("New note", {
+        transform: {
+          x: world.x - DEFAULT_NOTE_W / 2,
+          y: world.y - DEFAULT_NOTE_H / 2,
+          w: DEFAULT_NOTE_W,
+          h: DEFAULT_NOTE_H,
+        },
+        color,
+      });
+      commitDoc(upsertObject(doc, note), {
+        announce: `Placed ${note.a11y.name}`,
+      });
+      setSelectedId(note.id);
+      setTool("select");
+    },
+    [commitDoc, doc, stressCount],
+  );
+
   const addNote = () => {
-    if (!doc) return;
+    if (!doc || stressCount) return;
     const n = objectCount(doc);
-    const color = NOTE_COLORS[n % NOTE_COLORS.length];
+    const color = NOTE_COLORS[n % NOTE_COLORS.length]!;
     const note = createNote(`Note ${n + 1}`, {
       transform: {
         x: 80 + (n % 5) * 40,
         y: 80 + (n % 4) * 50,
-        w: 220,
-        h: 120,
+        w: DEFAULT_NOTE_W,
+        h: DEFAULT_NOTE_H,
       },
       color,
     });
     commitDoc(upsertObject(doc, note), {
-      announce: `Added ${note.a11y.name} (saving locally)`,
+      announce: `Added ${note.a11y.name}`,
+    });
+    setSelectedId(note.id);
+  };
+
+  const deleteSelected = useCallback(() => {
+    if (!doc || !selectedId || stressCount) return;
+    const obj = getObject(doc, selectedId);
+    const name = obj?.a11y.name ?? "object";
+    commitDoc(removeObject(doc, selectedId), {
+      announce: `Deleted ${name}`,
+    });
+    setSelectedId(null);
+  }, [commitDoc, doc, selectedId, stressCount]);
+
+  const onMove = useCallback(
+    (id: string, position: WorldPoint) => {
+      if (!doc || stressCount) return;
+      // Quiet commit — LiveRegion stays free for select/edit/delete
+      commitDoc(moveObject(doc, id, position));
+    },
+    [commitDoc, doc, stressCount],
+  );
+
+  const onNoteTextBlur = () => {
+    if (!doc || !selectedNote) return;
+    if (noteDraft === selectedNote.text) return;
+    commitDoc(updateNoteText(doc, selectedNote.id, noteDraft), {
+      announce: "Updated note text",
     });
   };
 
@@ -227,18 +309,34 @@ export function App() {
       immediate: true,
       announce: "Reset demo canvas and saved",
     });
+    setTitleDraft(fresh.title);
     setSelectedId(null);
+    setTool("select");
     setStress("0");
   };
 
-  const onTitleBlur = (title: string) => {
+  const onTitleBlur = () => {
     if (!doc) return;
-    const trimmed = title.trim() || "Untitled canvas";
-    if (trimmed === doc.title) return;
+    const trimmed = titleDraft.trim() || "Untitled canvas";
+    if (trimmed === doc.title) {
+      setTitleDraft(trimmed);
+      return;
+    }
+    setTitleDraft(trimmed);
     commitDoc(renameDocument(doc, trimmed), {
       announce: `Renamed canvas to ${trimmed}`,
     });
   };
+
+  const onEditRequest = useCallback((id: string) => {
+    setSelectedId(id);
+    setTool("select");
+    // Focus inspector after selection state commits
+    requestAnimationFrame(() => {
+      noteEditorRef.current?.focus();
+      noteEditorRef.current?.select();
+    });
+  }, []);
 
   return (
     <div className={shellClass}>
@@ -249,6 +347,17 @@ export function App() {
         subtitle="Slice 1 · local-first"
         end={
           <>
+            <Select
+              label="Tool"
+              hideLabel
+              options={TOOL_OPTIONS}
+              value={tool}
+              onChange={(e) => {
+                const value = e.target.value as EngineTool;
+                setTool(value);
+                setAnnounce(value === "note" ? "Note tool — click canvas to place" : "Select tool");
+              }}
+            />
             <Select
               label="Scene"
               hideLabel
@@ -306,6 +415,8 @@ export function App() {
             <CanvasHost
               document={doc}
               stressCount={stressCount}
+              tool={stressCount ? "select" : tool}
+              selectedId={stressCount ? null : selectedId}
               onSelect={(id) => {
                 setSelectedId(id);
                 if (id && doc) {
@@ -318,6 +429,14 @@ export function App() {
                 }
               }}
               onStats={setStats}
+              onTransformEnd={onMove}
+              onEditRequest={onEditRequest}
+              onPlace={placeNoteAt}
+              onDeleteRequest={() => deleteSelected()}
+              onToolChange={(next) => {
+                setTool(next);
+                if (next === "select") setAnnounce("Select tool");
+              }}
             />
           ) : (
             <div className={styles.loading} role="status">
@@ -327,7 +446,7 @@ export function App() {
         </section>
 
         <Panel
-          title="Local store"
+          title="Inspector"
           label="Inspector"
           footer={
             <>
@@ -343,8 +462,8 @@ export function App() {
               </p>
             ) : (
               <p className="m-0 text-rkc-sm text-rkc-muted">
-                Document autosaves to IndexedDB. Stress scenes stay in memory
-                only. Reload the page to verify persistence.
+                Notes autosave to IndexedDB. Drag to move, double-click to edit,
+                Delete to remove. Stress scenes stay in memory only.
               </p>
             )}
 
@@ -353,9 +472,9 @@ export function App() {
                 <span className={styles.fieldLabel}>Title</span>
                 <input
                   className={styles.input}
-                  key={doc.id + doc.updatedAt}
-                  defaultValue={doc.title}
-                  onBlur={(e) => onTitleBlur(e.target.value)}
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onBlur={onTitleBlur}
                   aria-label="Canvas title"
                 />
               </label>
@@ -369,6 +488,10 @@ export function App() {
               <div>
                 <dt>Objects</dt>
                 <dd>{doc ? objectCount(doc) : "—"}</dd>
+              </div>
+              <div>
+                <dt>Tool</dt>
+                <dd>{tool === "note" ? "Note" : "Select"}</dd>
               </div>
               <div>
                 <dt>Save</dt>
@@ -410,12 +533,54 @@ export function App() {
               </div>
             </dl>
 
-            {selected ? (
+            {selectedNote ? (
+              <div className="rkc-stack rkc-stack--sm">
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Note text</span>
+                  <textarea
+                    ref={noteEditorRef}
+                    className={styles.textarea}
+                    value={noteDraft}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    onBlur={onNoteTextBlur}
+                    rows={4}
+                    aria-label="Note text"
+                  />
+                </label>
+                <p className="m-0 text-rkc-xs text-rkc-muted">
+                  {Math.round(selectedNote.transform.x)},{" "}
+                  {Math.round(selectedNote.transform.y)} ·{" "}
+                  {Math.round(selectedNote.transform.w)}×
+                  {Math.round(selectedNote.transform.h)}
+                </p>
+                <div className={styles.cardActions}>
+                  <Button
+                    variant="secondary"
+                    onClick={deleteSelected}
+                    disabled={!!stressCount}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ) : selected ? (
               <div className="rkc-stack rkc-stack--sm">
                 <p className="rkc-text-xs rkc-text-muted" style={{ margin: 0 }}>
                   Selection
                 </p>
-                <p className="m-0 text-rkc-sm">{selected.a11y.name}</p>
+                <p className="m-0 text-rkc-sm">
+                  {selected.a11y.name}{" "}
+                  <span className="text-rkc-muted">({selected.type})</span>
+                </p>
+                <div className={styles.cardActions}>
+                  <Button
+                    variant="secondary"
+                    onClick={deleteSelected}
+                    disabled={!!stressCount}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
             ) : null}
 
@@ -431,7 +596,21 @@ export function App() {
             ) : null}
 
             <div className={styles.cardActions}>
-              <Button variant="primary" onClick={addNote} disabled={!doc || !!stressCount}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setTool("note");
+                  setAnnounce("Note tool — click canvas to place");
+                }}
+                disabled={!doc || !!stressCount}
+              >
+                Place note
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={addNote}
+                disabled={!doc || !!stressCount}
+              >
                 Add note
               </Button>
               <Button variant="secondary" onClick={resetDemo} disabled={!doc}>
@@ -454,10 +633,11 @@ export function App() {
               <li>Design tokens + density</li>
               <li>Object model (Zod)</li>
               <li>Engine spike</li>
+              <li>Local persistence</li>
               <li>
-                <strong>Local persistence</strong>
+                <strong>Note tools + selection</strong>
               </li>
-              <li>Note tools + a11y</li>
+              <li>Keyboard + a11y navigation</li>
             </ol>
           </div>
         </Panel>

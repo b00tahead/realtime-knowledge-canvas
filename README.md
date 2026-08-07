@@ -8,7 +8,7 @@ The canvas is the product — not a document editor with a map view bolted on. M
 
 ## Status
 
-**Slice 1 in progress** — design system, object model, engine, and IndexedDB persistence landed; next is note tools + a11y navigation.
+**Slice 1 in progress** — design system, object model, engine, IndexedDB, and note tools landed; next is keyboard + a11y navigation.
 
 | Slice | Goal | Status |
 |-------|------|--------|
@@ -92,7 +92,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Architecture notes live under [`docs/`
 
 1. Engine spike + design tokens + object model  
 2. Notes, selection, pan/zoom, local persistence  
-3. Keyboard object graph + offline shell  
+3. Keyboard object graph + offline shell (service worker)  
 4. Multiplayer presence + CRDT content channel  
 5. AI jobs that stream validated canvas events  
 

@@ -4,6 +4,8 @@ import type { Camera, RenderRect, ViewportSize } from "../types.js";
 /**
  * SVG interaction / a11y overlay.
  * Spike: draws focusable groups for visible rects (labels + hit targets).
+ * Pointer drag/place is owned by CanvasEngine on the host; overlay keeps
+ * keyboard activation for assistive tech.
  */
 export class SvgOverlay {
   readonly svg: SVGSVGElement;
@@ -60,16 +62,12 @@ export class SvgOverlay {
       g.setAttribute("aria-label", r.label);
       g.setAttribute("tabindex", "-1");
       g.style.pointerEvents = "auto";
-      g.style.cursor = "default";
+      g.style.cursor = selectedId === r.id ? "grab" : "pointer";
       g.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           this.onActivate?.(r.id);
         }
-      });
-      g.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.onActivate?.(r.id);
       });
 
       const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
