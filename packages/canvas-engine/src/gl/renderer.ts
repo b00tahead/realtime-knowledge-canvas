@@ -58,13 +58,16 @@ export class GlRenderer {
 
   constructor(
     canvas: HTMLCanvasElement,
-    background: readonly [number, number, number, number] = [0.06, 0.07, 0.08, 1],
+    background: readonly [number, number, number, number] = [
+      0.071, 0.075, 0.082, 1,
+    ],
   ) {
     this.canvas = canvas;
+    // Alpha so the host's CSS paper + dot grid shows through
     const gl = canvas.getContext("webgl2", {
       antialias: true,
-      alpha: false,
-      premultipliedAlpha: false,
+      alpha: true,
+      premultipliedAlpha: true,
       powerPreference: "high-performance",
     });
     if (!gl) {
@@ -72,6 +75,7 @@ export class GlRenderer {
     }
     this.gl = gl;
     this.background = background;
+    canvas.style.background = "transparent";
     this.program = createProgram(gl);
 
     const vao = gl.createVertexArray();
@@ -128,21 +132,25 @@ export class GlRenderer {
   ): void {
     const gl = this.gl;
     const dpr = viewport.dpr;
-    const [br, bg, bb, ba] = this.background;
-    gl.clearColor(br, bg, bb, ba);
+    // Fully transparent clear — paper color + dot grid come from CSS under the canvas
+    void this.background;
+    gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    if (rects.length === 0) return;
+    // Outline-only notes use transparent fills — skip empty draw
+    const filled = rects.filter((r) => r.color[3] > 0.01);
+    if (filled.length === 0) return;
 
-    const floats = new Float32Array(rects.length * VERTS_PER_RECT * STRIDE_FLOATS);
+    const floats = new Float32Array(
+      filled.length * VERTS_PER_RECT * STRIDE_FLOATS,
+    );
     let o = 0;
-    for (const r of rects) {
+    for (const r of filled) {
       const x0 = r.x;
       const y0 = r.y;
       const x1 = r.x + r.w;
       const y1 = r.y + r.h;
       const [cr, cg, cb, ca] = r.color;
-      // two triangles: (0,0)-(1,0)-(0,1) and (1,0)-(1,1)-(0,1)
       const corners: Array<[number, number]> = [
         [x0, y0],
         [x1, y0],
@@ -172,17 +180,17 @@ export class GlRenderer {
     }
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, floats);
 
-    // Shader works in CSS pixel space matching camera math
     gl.uniform2f(this.uResolution, viewport.width, viewport.height);
     gl.uniform2f(this.uCamera, camera.x, camera.y);
     gl.uniform1f(this.uZoom, camera.zoom);
 
-    // When canvas is DPR-scaled, WebGL viewport is in device pixels but our
-    // clip conversion uses CSS resolution — correct because we pass CSS size
-    // in u_resolution and the canvas is CSS-sized via style.
     void dpr;
 
-    gl.drawArrays(gl.TRIANGLES, 0, rects.length * VERTS_PER_RECT);
+    gl.drawArrays(gl.TRIANGLES, 0, filled.length * VERTS_PER_RECT);
+  }
+
+  setBackground(background: readonly [number, number, number, number]): void {
+    this.background = background;
   }
 
   destroy(): void {

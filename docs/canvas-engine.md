@@ -6,8 +6,10 @@ Dual-surface infinite canvas (ADR 0002):
 
 | Surface | Role |
 |---------|------|
-| **WebGL2** | Camera transform, batched axis-aligned rects, clear + paint timing |
-| **SVG** | Hit targets, labels (when zoomed in), selection stroke, a11y names |
+| **WebGL2** | Camera transform, batched soft fills, paint timing (transparent over CSS paper) |
+| **SVG** | Rough hand-drawn strokes, hachure (LOD), labels, hit targets, selection ring, a11y |
+
+Visual language is **Excalidraw-adjacent**: outline-only rough rects (no fills for now), wrapped body text clipped inside each note, sketch typography (`--rkc-font-sketch` / Virgil), and a dotted paper board. Per-note colors can return later.
 
 React is **not** required — `CanvasEngine` mounts into any `HTMLElement`. The web app uses `CanvasHost` as a thin host.
 
@@ -42,7 +44,7 @@ engine.destroy();
 | Middle mouse drag | Pan |
 | Click object | Select |
 | Drag object | Move (commit on pointer up) |
-| Double-click object | Edit request (host focuses inspector) |
+| Double-click object | Edit request (host opens in-place editor) |
 | Click empty (select tool) | Clear selection |
 | Click empty (note tool) | Place note at world point |
 | Delete / Backspace | Delete request for selection |
@@ -60,10 +62,11 @@ Tools: `select` | `note` via `setTool()`.
 
 - Full buffer rewrite every frame (no dirty regions / GPU instancing yet)
 - SVG rebuilds all visible nodes (no keyed patching)
-- No text in WebGL — labels only on SVG when zoom ≥ ~0.55
+- Rough strokes simplify / drop hachure past object or zoom thresholds
+- No text in WebGL — labels only on SVG when zoom ≥ ~0.5
 - Connectors not drawn yet
 
-These are intentional for PR4; later PRs add LOD, spatial index, and incremental updates.
+Later: keyed SVG patching, GPU stroke instancing, world-space grid that pans with the camera.
 
 ## Public API (highlights)
 

@@ -5,11 +5,18 @@ import {
   DEFAULT_MIN_ZOOM,
   screenToWorld,
   visibleWorldBounds,
+  worldToScreen,
 } from "./camera.js";
 import { GlRenderer } from "./gl/renderer.js";
 import { PointerController } from "./input/pointer.js";
 import { PerfTracker } from "./perf.js";
-import { documentToRenderRects, objectsToRenderRects } from "./scene.js";
+import { CANVAS_BG_DARK, CANVAS_BG_LIGHT } from "./color.js";
+import {
+  createStressRects,
+  documentToRenderRects,
+  objectsToRenderRects,
+  type CanvasSurface,
+} from "./scene.js";
 import { cullRects } from "./spatial.js";
 import { SvgOverlay } from "./svg/overlay.js";
 import type {
@@ -23,6 +30,8 @@ import type {
 } from "./types.js";
 
 const DRAG_THRESHOLD_PX = 3;
+const DBLCLICK_MS = 350;
+const DBLCLICK_SLOP_PX = 6;
 
 interface ObjectDragState {
   id: string;
@@ -32,6 +41,22 @@ interface ObjectDragState {
   originX: number;
   originY: number;
   moved: boolean;
+  /** Capture only after drag starts so dblclick still fires. */
+  captured: boolean;
+}
+
+interface LastClickState {
+  id: string;
+  at: number;
+  x: number;
+  y: number;
+}
+
+export interface ScreenRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 /**
@@ -52,8 +77,12 @@ export class CanvasEngine {
   private rects: RenderRect[] = [];
   private selectedId: string | null = null;
   private tool: EngineTool = "select";
+  private surface: CanvasSurface = "dark";
   private minZoom: number;
   private maxZoom: number;
+  /** Last document/objects source so surface changes can rebuild colors. */
+  private lastDoc: CanvasDocument | null = null;
+  private lastStressCount: number | null = null;
   private onStats?: (stats: EngineStats) => void;
   private onSelect?: (id: string | null) => void;
   private onTransformEnd?: (id: string, position: WorldPoint) => void;
@@ -63,6 +92,7 @@ export class CanvasEngine {
   private onToolChange?: (tool: EngineTool) => void;
 
   private drag: ObjectDragState | null = null;
+  private lastClick: LastClickState | null = null;
   private dirty = true;
   private raf = 0;
   private running = false;
@@ -87,6 +117,7 @@ export class CanvasEngine {
     this.maxZoom = options.maxZoom ?? DEFAULT_MAX_ZOOM;
     this.onStats = options.onStats;
     this.tool = options.tool ?? "select";
+    this.surface = options.surface ?? "dark";
 
     const host = document.createElement("div");
     host.className = "rkc-canvas-engine";
@@ -101,6 +132,7 @@ export class CanvasEngine {
       "aria-label",
       "Infinite canvas. Space-drag or middle-mouse to pan, scroll to zoom. Drag notes to move. Delete removes selection.",
     );
+    this.applyHostChrome(host);
 
     const canvas = document.createElement("canvas");
     canvas.style.display = "block";
@@ -114,7 +146,11 @@ export class CanvasEngine {
     this.container.replaceChildren(host);
     this.host = host;
 
-    this.renderer = new GlRenderer(canvas, options.background);
+    this.renderer = new GlRenderer(
+      canvas,
+      options.background ??
+        (this.surface === "light" ? CANVAS_BG_LIGHT : CANVAS_BG_DARK),
+    );
     this.overlay = new SvgOverlay(svg);
     this.overlay.setActivateHandler((id) => {
       this.select(id);
@@ -204,6 +240,27 @@ export class CanvasEngine {
     this.onToolChange?.(tool);
   }
 
+  getSurface(): CanvasSurface {
+    return this.surface;
+  }
+
+  setSurface(surface: CanvasSurface): void {
+    if (this.surface === surface) return;
+    this.surface = surface;
+    this.renderer.setBackground(
+      surface === "light" ? CANVAS_BG_LIGHT : CANVAS_BG_DARK,
+    );
+    this.applyHostChrome(this.host);
+    if (this.lastStressCount && this.lastStressCount > 0) {
+      this.setRects(
+        createStressRects(this.lastStressCount, { surface: this.surface }),
+      );
+    } else if (this.lastDoc) {
+      this.setRects(documentToRenderRects(this.lastDoc, this.surface));
+    }
+    this.dirty = true;
+  }
+
   getCamera(): Camera {
     return { ...this.camera };
   }
@@ -239,14 +296,25 @@ export class CanvasEngine {
   }
 
   setObjects(objects: Iterable<CanvasObject>): void {
-    this.setRects(objectsToRenderRects(objects));
+    this.lastDoc = null;
+    this.lastStressCount = null;
+    this.setRects(objectsToRenderRects(objects, this.surface));
   }
 
   setDocument(doc: CanvasDocument): void {
-    this.setRects(documentToRenderRects(doc));
+    this.lastDoc = doc;
+    this.lastStressCount = null;
+    this.setRects(documentToRenderRects(doc, this.surface));
     if (doc.camera) {
       this.setCamera(doc.camera);
     }
+  }
+
+  /** Stress grid fixtures (not persisted). */
+  setStress(count: number): void {
+    this.lastDoc = null;
+    this.lastStressCount = count;
+    this.setRects(createStressRects(count, { surface: this.surface }));
   }
 
   /** Force a redraw on the next animation frame. */
@@ -256,6 +324,26 @@ export class CanvasEngine {
 
   focus(): void {
     this.host.focus();
+  }
+
+  /**
+   * Screen-space AABB of an object relative to the engine host (CSS px).
+   * Used for in-place editors.
+   */
+  getObjectScreenRect(id: string): ScreenRect | null {
+    const r = this.rects.find((x) => x.id === id);
+    if (!r) return null;
+    const tl = worldToScreen(this.camera, { x: r.x, y: r.y });
+    const br = worldToScreen(this.camera, {
+      x: r.x + r.w,
+      y: r.y + r.h,
+    });
+    return {
+      x: tl.x,
+      y: tl.y,
+      w: Math.max(1, br.x - tl.x),
+      h: Math.max(1, br.y - tl.y),
+    };
   }
 
   destroy(): void {
@@ -284,6 +372,19 @@ export class CanvasEngine {
     this.dirty = true;
   }
 
+  private applyHostChrome(host: HTMLElement): void {
+    host.dataset.surface = this.surface;
+    host.style.setProperty(
+      "--rkc-canvas-ink",
+      this.surface === "light"
+        ? "rgba(28, 28, 30, 0.9)"
+        : "rgba(235, 235, 240, 0.9)",
+    );
+    // Match paper under transparent GL so pan/zoom never flashes wrong clear
+    host.style.backgroundColor =
+      this.surface === "light" ? "#f8f5ef" : "#121318";
+  }
+
   private applyToolCursor(): void {
     if (this.drag?.moved) {
       this.host.style.cursor = "grabbing";
@@ -303,22 +404,51 @@ export class CanvasEngine {
 
   private hitObjectId(target: EventTarget | null): string | null {
     if (!(target instanceof Element)) return null;
+    // Walk from target; when pointer is captured, target may be the host
     const el = target.closest("[data-id]");
     if (!el) return null;
     return el.getAttribute("data-id");
+  }
+
+  /** Spatial hit-test in world space (topmost by array order / z). */
+  private hitObjectAtClient(clientX: number, clientY: number): string | null {
+    const world = this.clientToWorld(clientX, clientY);
+    // rects are sorted low→high z; pick last containing
+    for (let i = this.rects.length - 1; i >= 0; i -= 1) {
+      const r = this.rects[i]!;
+      if (
+        world.x >= r.x &&
+        world.x <= r.x + r.w &&
+        world.y >= r.y &&
+        world.y <= r.y + r.h
+      ) {
+        return r.id;
+      }
+    }
+    return null;
+  }
+
+  private requestEdit(id: string): void {
+    this.select(id);
+    this.onEditRequest?.(id);
+    // Prevent a third click from treating this as another double
+    this.lastClick = null;
   }
 
   private handlePointerDown(e: PointerEvent): void {
     if (e.button !== 0) return;
     if (this.pointer.isSpaceDown() || this.pointer.isPanning()) return;
 
-    const id = this.hitObjectId(e.target);
+    // Prefer DOM hit, fall back to spatial (needed under pointer capture)
+    const id =
+      this.hitObjectId(e.target) ??
+      this.hitObjectAtClient(e.clientX, e.clientY);
 
     if (id) {
-      // Select + prepare drag (select tool, or note tool on existing object)
       this.select(id);
       const rect = this.rects.find((r) => r.id === id);
       if (!rect) return;
+      // Do NOT capture yet — early capture retargets dblclick to the host
       this.drag = {
         id,
         pointerId: e.pointerId,
@@ -327,16 +457,13 @@ export class CanvasEngine {
         originX: rect.x,
         originY: rect.y,
         moved: false,
+        captured: false,
       };
-      try {
-        this.host.setPointerCapture(e.pointerId);
-      } catch {
-        /* ignore */
-      }
       return;
     }
 
     // Empty canvas
+    this.lastClick = null;
     if (this.tool === "note") {
       e.preventDefault();
       const world = this.clientToWorld(e.clientX, e.clientY);
@@ -362,7 +489,17 @@ export class CanvasEngine {
       return;
     }
 
+    if (!this.drag.captured) {
+      try {
+        this.host.setPointerCapture(e.pointerId);
+        this.drag.captured = true;
+      } catch {
+        /* ignore */
+      }
+    }
+
     this.drag.moved = true;
+    this.lastClick = null; // drag cancels double-click chain
     const zoom = this.camera.zoom || 1;
     const nextX = this.drag.originX + dxScreen / zoom;
     const nextY = this.drag.originY + dyScreen / zoom;
@@ -377,29 +514,54 @@ export class CanvasEngine {
   private handlePointerUp(e: PointerEvent): void {
     if (!this.drag || this.drag.pointerId !== e.pointerId) return;
 
-    const { id, moved } = this.drag;
+    const { id, moved, captured } = this.drag;
     const rect = this.rects.find((r) => r.id === id);
     this.drag = null;
 
-    try {
-      this.host.releasePointerCapture(e.pointerId);
-    } catch {
-      /* already released */
+    if (captured) {
+      try {
+        this.host.releasePointerCapture(e.pointerId);
+      } catch {
+        /* already released */
+      }
     }
 
     this.applyToolCursor();
 
     if (moved && rect) {
       this.onTransformEnd?.(id, { x: rect.x, y: rect.y });
+      return;
     }
+
+    // Click (no drag): detect double-click without relying on dblclick target
+    const now = performance.now();
+    const prev = this.lastClick;
+    if (
+      prev &&
+      prev.id === id &&
+      now - prev.at <= DBLCLICK_MS &&
+      Math.hypot(e.clientX - prev.x, e.clientY - prev.y) <= DBLCLICK_SLOP_PX
+    ) {
+      this.requestEdit(id);
+      return;
+    }
+
+    this.lastClick = {
+      id,
+      at: now,
+      x: e.clientX,
+      y: e.clientY,
+    };
   }
 
   private handleDblClick(e: MouseEvent): void {
-    const id = this.hitObjectId(e.target);
+    // Spatial hit: pointer capture can make e.target the host, missing data-id
+    const id =
+      this.hitObjectId(e.target) ??
+      this.hitObjectAtClient(e.clientX, e.clientY);
     if (!id) return;
     e.preventDefault();
-    this.select(id);
-    this.onEditRequest?.(id);
+    this.requestEdit(id);
   }
 
   private handleKeyDown(e: KeyboardEvent): void {

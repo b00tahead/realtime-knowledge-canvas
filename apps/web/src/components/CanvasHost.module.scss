@@ -3,12 +3,26 @@
   width: 100%;
   height: 100%;
   min-height: 16rem;
-  background: var(--rkc-color-bg);
+  /* Excalidraw-like board */
+  background: var(--rkc-canvas-bg, var(--rkc-color-bg));
+  /* Dot grid in screen space (pan is GPU — grid is a subtle static texture) */
+  background-image: radial-gradient(
+    var(--rkc-canvas-dot) 1px,
+    transparent 1px
+  );
+  background-size: var(--rkc-canvas-grid-size, 24px) var(--rkc-canvas-grid-size, 24px);
+  background-position: 0 0;
 }
 
 .viewport {
   position: absolute;
   inset: 0;
+
+  /* Engine host fills this; keep transparent so CSS dots show if GL clear lags */
+  :global(.rkc-canvas-engine) {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .error {
@@ -64,4 +78,29 @@
   color: var(--rkc-color-text-subtle);
   pointer-events: none;
   text-align: center;
+  font-family: var(--rkc-font-sketch, var(--rkc-font-sans));
+}
+
+.inlineEditor {
+  position: absolute;
+  z-index: calc(var(--rkc-z-overlay) + 2);
+  margin: 0;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  resize: none;
+  border: 1.5px solid var(--rkc-color-accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--rkc-canvas-bg, var(--rkc-color-bg)) 92%, var(--rkc-color-surface));
+  color: var(--rkc-canvas-ink, var(--rkc-color-text));
+  font-family: var(--rkc-font-sketch, "Virgil", "Segoe Print", cursive);
+  font-size: 14px;
+  line-height: 1.3;
+  box-shadow: var(--rkc-shadow-md);
+  outline: none;
+  overflow: auto;
+
+  &:focus-visible {
+    outline: var(--rkc-focus-ring-width) solid var(--rkc-color-focus-ring);
+    outline-offset: 1px;
+  }
 }

@@ -31,10 +31,17 @@ export interface RenderRect {
   y: number;
   w: number;
   h: number;
-  /** RGBA 0–1 */
+  /**
+   * Optional fill RGBA 0–1. Transparent / omitted → outline-only
+   * (WebGL skips near-zero alpha).
+   */
   color: readonly [number, number, number, number];
-  /** Accessible name for SVG overlay */
+  /** Ink stroke RGBA 0–1 (SVG rough outline) */
+  stroke: readonly [number, number, number, number];
+  /** Accessible name for AT */
   label: string;
+  /** Body text drawn (and wrapped) inside the rect; falls back to label */
+  text: string;
   /** Optional z for stable layering */
   zIndex: number;
 }
@@ -73,4 +80,6 @@ export interface EngineOptions {
   onStats?: (stats: EngineStats) => void;
   /** Initial tool (default select). */
   tool?: EngineTool;
+  /** Ink/fill contrast surface (default dark). */
+  surface?: "dark" | "light";
 }

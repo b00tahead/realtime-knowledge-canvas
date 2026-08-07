@@ -33,11 +33,32 @@ export {
 } from "./camera.js";
 
 export { aabbIntersects, cullRects, rectToAABB } from "./spatial.js";
-export { parseColor, paletteColor, NOTE_PALETTE } from "./color.js";
+export {
+  parseColor,
+  paletteColor,
+  paletteStroke,
+  sketchFill,
+  sketchStroke,
+  rgbaToCss,
+  NOTE_PALETTE,
+  NOTE_PALETTE_HEX,
+  CANVAS_BG_DARK,
+  CANVAS_BG_LIGHT,
+} from "./color.js";
 export {
   createStressRects,
   documentToRenderRects,
   objectsToRenderRects,
+  type CanvasSurface,
 } from "./scene.js";
+export {
+  hashSeed,
+  createRng,
+  roughRectangle,
+  roughHachure,
+  pointsToPath,
+} from "./rough.js";
+export { wrapText, maxLinesForHeight } from "./text-layout.js";
 export { PerfTracker } from "./perf.js";
 export { CanvasEngine } from "./engine.js";
+export type { ScreenRect } from "./engine.js";

@@ -51,17 +51,19 @@
   --rkc-focus-ring-width: 2px;
   --rkc-focus-ring-offset: 2px;
 
-  /* Canvas object accents (notes, etc.) */
-  --rkc-note-yellow: #f5d76e;
-  --rkc-note-blue: #7eb6ff;
-  --rkc-note-green: #7dcea0;
-  --rkc-note-pink: #f5a3c7;
-  --rkc-note-purple: #c4a1ff;
-  --rkc-note-orange: #f0a06a;
+  /* Canvas object accents — Excalidraw-like pastels */
+  --rkc-note-yellow: #ffec99;
+  --rkc-note-blue: #a5d8ff;
+  --rkc-note-green: #b2f2bb;
+  --rkc-note-pink: #ffc9c9;
+  --rkc-note-purple: #d0bfff;
+  --rkc-note-orange: #ffd8a8;
 
-  /* Canvas chrome */
-  --rkc-canvas-dot: color-mix(in srgb, var(--rkc-color-border) 70%, transparent);
-  --rkc-canvas-grid-size: 24px;
+  /* Canvas chrome (sketch board) */
+  --rkc-canvas-bg: #121318;
+  --rkc-canvas-ink: rgba(235, 235, 240, 0.9);
+  --rkc-canvas-dot: color-mix(in srgb, #9aa3b5 28%, transparent);
+  --rkc-canvas-grid-size: 22px;
   --rkc-selection-fill: color-mix(in srgb, var(--rkc-color-accent) 14%, transparent);
   --rkc-selection-stroke: var(--rkc-color-accent);
 
@@ -74,6 +76,8 @@
   /* Typography */
   --rkc-font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --rkc-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  /* Hand-drawn labels on the canvas (Virgil-like stack) */
+  --rkc-font-sketch: "Virgil", "Segoe Print", "Comic Sans MS", "Chalkboard SE", cursive;
   --rkc-font-weight-regular: 400;
   --rkc-font-weight-medium: 500;
   --rkc-font-weight-semibold: 600;
@@ -140,7 +144,9 @@
 
   --rkc-color-focus-ring: #3b7ddd;
 
-  --rkc-canvas-dot: color-mix(in srgb, var(--rkc-color-border) 85%, transparent);
+  --rkc-canvas-bg: #f8f5ef;
+  --rkc-canvas-ink: rgba(28, 28, 30, 0.9);
+  --rkc-canvas-dot: color-mix(in srgb, #8a8490 32%, transparent);
 
   --rkc-shadow-sm: 0 1px 2px rgb(15 17 21 / 0.06);
   --rkc-shadow-md: 0 4px 16px rgb(15 17 21 / 0.08);

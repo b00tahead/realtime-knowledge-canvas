@@ -74,7 +74,6 @@ const TOOL_OPTIONS: { value: EngineTool; label: string }[] = [
   { value: "note", label: "Note tool" },
 ];
 
-const NOTE_COLORS = ["#f5d76e", "#7eb6ff", "#7dcea0", "#f5a3c7", "#c4a1ff", "#f0a06a"];
 const DEFAULT_NOTE_W = 220;
 const DEFAULT_NOTE_H = 120;
 
@@ -82,23 +81,26 @@ function buildDemoDocument(): CanvasDocument {
   let d = createEmptyDocument(DEFAULT_LOCAL_CANVAS_ID, "Personal research board");
   d = upsertObject(
     d,
-    createNote("Schema-validated notes live in @rkc/object-model", {
-      transform: { x: 40, y: 40, w: 260, h: 140 },
-      color: "#f5d76e",
-    }),
+    createNote(
+      "Schema-validated notes live in @rkc/object-model — text wraps inside the outline.",
+      {
+        transform: { x: 40, y: 40, w: 260, h: 140 },
+      },
+    ),
   );
   d = upsertObject(
     d,
-    createNote("WebGL draws bulk geometry; SVG handles hit targets & labels", {
-      transform: { x: 340, y: 80, w: 280, h: 150 },
-      color: "#7eb6ff",
-    }),
+    createNote(
+      "Rough ink outline + wrapped body text. Double-click a note to edit in the inspector.",
+      {
+        transform: { x: 340, y: 80, w: 280, h: 150 },
+      },
+    ),
   );
   d = upsertObject(
     d,
-    createNote("Drag notes · double-click to edit · Del to delete", {
+    createNote("Drag to move · Delete to remove · Place note tool to add more", {
       transform: { x: 120, y: 260, w: 300, h: 130 },
-      color: "#7dcea0",
     }),
   );
   return d;
@@ -136,9 +138,13 @@ export function App() {
   const [bootError, setBootError] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
+  /** When set, CanvasHost shows an in-place editor for this note id. */
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const sessionRef = useRef<PersistenceSession | null>(null);
   const noteEditorRef = useRef<HTMLTextAreaElement | null>(null);
+  /** Skip the next blur-commit (e.g. after Escape cancel). */
+  const suppressEditCommitRef = useRef(false);
   const offline = useMemo(() => createInitialOfflineStatus(), []);
 
   const commitDoc = useCallback(
@@ -237,8 +243,6 @@ export function App() {
   const placeNoteAt = useCallback(
     (world: WorldPoint) => {
       if (!doc || stressCount) return;
-      const n = objectCount(doc);
-      const color = NOTE_COLORS[n % NOTE_COLORS.length]!;
       const note = createNote("New note", {
         transform: {
           x: world.x - DEFAULT_NOTE_W / 2,
@@ -246,7 +250,6 @@ export function App() {
           w: DEFAULT_NOTE_W,
           h: DEFAULT_NOTE_H,
         },
-        color,
       });
       commitDoc(upsertObject(doc, note), {
         announce: `Placed ${note.a11y.name}`,
@@ -260,7 +263,6 @@ export function App() {
   const addNote = () => {
     if (!doc || stressCount) return;
     const n = objectCount(doc);
-    const color = NOTE_COLORS[n % NOTE_COLORS.length]!;
     const note = createNote(`Note ${n + 1}`, {
       transform: {
         x: 80 + (n % 5) * 40,
@@ -268,7 +270,6 @@ export function App() {
         w: DEFAULT_NOTE_W,
         h: DEFAULT_NOTE_H,
       },
-      color,
     });
     commitDoc(upsertObject(doc, note), {
       announce: `Added ${note.a11y.name}`,
@@ -284,6 +285,7 @@ export function App() {
       announce: `Deleted ${name}`,
     });
     setSelectedId(null);
+    setEditingId(null);
   }, [commitDoc, doc, selectedId, stressCount]);
 
   const onMove = useCallback(
@@ -295,12 +297,22 @@ export function App() {
     [commitDoc, doc, stressCount],
   );
 
+  const commitNoteDraft = useCallback(
+    (id: string, text: string, announce = "Updated note text") => {
+      if (!doc) return;
+      const obj = getObject(doc, id);
+      if (!obj || obj.type !== "note") return;
+      if (text === obj.text) return;
+      commitDoc(updateNoteText(doc, id, text), { announce });
+    },
+    [commitDoc, doc],
+  );
+
   const onNoteTextBlur = () => {
-    if (!doc || !selectedNote) return;
-    if (noteDraft === selectedNote.text) return;
-    commitDoc(updateNoteText(doc, selectedNote.id, noteDraft), {
-      announce: "Updated note text",
-    });
+    if (!selectedNote) return;
+    // Avoid double-commit when in-place editor is open
+    if (editingId === selectedNote.id) return;
+    commitNoteDraft(selectedNote.id, noteDraft);
   };
 
   const resetDemo = () => {
@@ -311,6 +323,7 @@ export function App() {
     });
     setTitleDraft(fresh.title);
     setSelectedId(null);
+    setEditingId(null);
     setTool("select");
     setStress("0");
   };
@@ -328,15 +341,45 @@ export function App() {
     });
   };
 
-  const onEditRequest = useCallback((id: string) => {
-    setSelectedId(id);
-    setTool("select");
-    // Focus inspector after selection state commits
-    requestAnimationFrame(() => {
-      noteEditorRef.current?.focus();
-      noteEditorRef.current?.select();
-    });
-  }, []);
+  const onEditRequest = useCallback(
+    (id: string) => {
+      if (!doc || stressCount) return;
+      const obj = getObject(doc, id);
+      if (!obj || obj.type !== "note") {
+        setAnnounce("Only notes can be edited for now");
+        return;
+      }
+      setSelectedId(id);
+      setTool("select");
+      setNoteDraft(obj.text);
+      setEditingId(id);
+      setAnnounce(`Editing ${obj.a11y.name}`);
+    },
+    [doc, stressCount],
+  );
+
+  const onEditCommit = useCallback(() => {
+    if (suppressEditCommitRef.current) {
+      suppressEditCommitRef.current = false;
+      return;
+    }
+    if (!editingId) return;
+    commitNoteDraft(editingId, noteDraft);
+    setEditingId(null);
+    setAnnounce("Note saved");
+  }, [commitNoteDraft, editingId, noteDraft]);
+
+  const onEditCancel = useCallback(() => {
+    suppressEditCommitRef.current = true;
+    if (!editingId || !doc) {
+      setEditingId(null);
+      return;
+    }
+    const obj = getObject(doc, editingId);
+    if (obj?.type === "note") setNoteDraft(obj.text);
+    setEditingId(null);
+    setAnnounce("Edit cancelled");
+  }, [doc, editingId]);
 
   return (
     <div className={shellClass}>
@@ -417,7 +460,15 @@ export function App() {
               stressCount={stressCount}
               tool={stressCount ? "select" : tool}
               selectedId={stressCount ? null : selectedId}
+              editingId={stressCount ? null : editingId}
+              editingText={noteDraft}
+              surface={theme === "light" ? "light" : "dark"}
               onSelect={(id) => {
+                // Selecting something else ends in-place edit (commit)
+                if (editingId && id !== editingId) {
+                  commitNoteDraft(editingId, noteDraft);
+                  setEditingId(null);
+                }
                 setSelectedId(id);
                 if (id && doc) {
                   const obj = getObject(doc, id);
@@ -425,12 +476,19 @@ export function App() {
                     obj ? `Selected ${obj.a11y.name}` : `Selected ${id}`,
                   );
                 } else {
+                  if (editingId) {
+                    commitNoteDraft(editingId, noteDraft);
+                    setEditingId(null);
+                  }
                   setAnnounce("Selection cleared");
                 }
               }}
               onStats={setStats}
               onTransformEnd={onMove}
               onEditRequest={onEditRequest}
+              onEditTextChange={setNoteDraft}
+              onEditCommit={onEditCommit}
+              onEditCancel={onEditCancel}
               onPlace={placeNoteAt}
               onDeleteRequest={() => deleteSelected()}
               onToolChange={(next) => {
