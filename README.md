@@ -35,7 +35,7 @@ apps/
 packages/
   canvas-engine/       WebGL + SVG canvas engine
   design-system/       Tokens, density modes, components
-  object-model/        Shared canvas object schemas
+  object-model/        Zod schemas + document ops (shared by all layers)
   sync-protocol/       CRDT/presence adapters (Yjs behind interface)
   offline/             Service worker + IndexedDB helpers
 services/              Go microservices (presence, AI) — Slice 2–3

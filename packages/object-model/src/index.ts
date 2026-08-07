@@ -1,113 +1,94 @@
 /**
- * Shared canvas object model.
- * Engine, web app, sync, and (later) AI all consume this package.
+ * @rkc/object-model
+ *
+ * Shared schema-first canvas document model.
+ * Engine, web, sync, and AI all consume this package — never invent parallel types.
  */
 
-export const OBJECT_MODEL_VERSION = 1 as const;
+export { OBJECT_MODEL_VERSION, type ObjectModelVersion } from "./version.js";
 
-export type ObjectId = string;
-export type UserId = string;
+export {
+  createId,
+  type DocumentId,
+  type ObjectId,
+  type UserId,
+} from "./ids.js";
 
-export interface Transform2D {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  rotation?: number;
-}
+export {
+  a11yMetaSchema,
+  canvasDocumentSchema,
+  canvasObjectSchema,
+  citationObjectSchema,
+  connectorObjectSchema,
+  frameObjectSchema,
+  noteObjectSchema,
+  objectIdSchema,
+  objectTypeSchema,
+  shapeKindSchema,
+  shapeObjectSchema,
+  summaryObjectSchema,
+  summaryStatusSchema,
+  transform2DSchema,
+  userIdSchema,
+  type A11yMeta,
+  type BaseObject,
+  type CanvasDocument,
+  type CanvasObject,
+  type CitationObject,
+  type ConnectorObject,
+  type FrameObject,
+  type NoteObject,
+  type ObjectType,
+  type ShapeKind,
+  type ShapeObject,
+  type SummaryObject,
+  type SummaryStatus,
+  type Transform2D,
+} from "./schemas.js";
 
-export interface A11yMeta {
-  name: string;
-  description?: string;
-}
+export { deriveA11yName, withDerivedA11y } from "./a11y.js";
 
-export interface BaseObject {
-  id: ObjectId;
-  type: string;
-  parentId?: ObjectId;
-  transform: Transform2D;
-  zIndex: number;
-  createdBy: UserId;
-  updatedAt: number;
-  a11y: A11yMeta;
-}
+export {
+  createCitation,
+  createConnector,
+  createFrame,
+  createNote,
+  createShape,
+  createSummary,
+  type CreateObjectOptions,
+} from "./factories.js";
 
-export interface NoteObject extends BaseObject {
-  type: "note";
-  text: string;
-  color?: string;
-}
+export {
+  cloneDocument,
+  createEmptyDocument,
+  getObject,
+  listChildren,
+  listObjects,
+  listObjectsByType,
+  objectCount,
+  removeObject,
+  renameDocument,
+  updateObject,
+  upsertObject,
+} from "./document.js";
 
-export interface ShapeObject extends BaseObject {
-  type: "shape";
-  shape: "rect" | "ellipse" | "diamond";
-  fill?: string;
-  stroke?: string;
-}
+export {
+  compareReadingOrder,
+  listInReadingOrder,
+  listTopLevelInReadingOrder,
+} from "./order.js";
 
-export interface FrameObject extends BaseObject {
-  type: "frame";
-  title: string;
-}
+export {
+  assertCanvasDocument,
+  assertCanvasObject,
+  isCanvasDocument,
+  isCanvasObject,
+  parseCanvasDocument,
+  parseCanvasObject,
+  validateDocumentGraph,
+  type ParseFailure,
+  type ParseResult,
+  type ParseSuccess,
+} from "./validate.js";
 
-export interface ConnectorObject extends BaseObject {
-  type: "connector";
-  fromId: ObjectId;
-  toId: ObjectId;
-}
-
-/** Slice 3 research types — stubbed for forward compatibility */
-export interface CitationObject extends BaseObject {
-  type: "citation";
-  title: string;
-  url?: string;
-  authors?: string[];
-}
-
-export interface SummaryObject extends BaseObject {
-  type: "summary";
-  text: string;
-  status: "streaming" | "ready" | "failed";
-  sourceIds?: ObjectId[];
-}
-
-export type CanvasObject =
-  | NoteObject
-  | ShapeObject
-  | FrameObject
-  | ConnectorObject
-  | CitationObject
-  | SummaryObject;
-
-export interface CanvasDocument {
-  version: typeof OBJECT_MODEL_VERSION;
-  id: string;
-  title: string;
-  objects: Record<ObjectId, CanvasObject>;
-  updatedAt: number;
-}
-
-export function createEmptyDocument(
-  id: string,
-  title = "Untitled canvas",
-): CanvasDocument {
-  return {
-    version: OBJECT_MODEL_VERSION,
-    id,
-    title,
-    objects: {},
-    updatedAt: Date.now(),
-  };
-}
-
-export function isCanvasObject(value: unknown): value is CanvasObject {
-  if (value === null || typeof value !== "object") return false;
-  const o = value as Record<string, unknown>;
-  return (
-    typeof o.id === "string" &&
-    typeof o.type === "string" &&
-    typeof o.zIndex === "number" &&
-    typeof o.transform === "object" &&
-    o.transform !== null
-  );
-}
+export { migrateDocument, type MigrationResult } from "./migrate.js";

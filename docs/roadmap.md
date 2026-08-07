@@ -4,7 +4,7 @@
 
 - [x] Monorepo scaffold (pnpm, turbo, CI, Apache-2.0)
 - [x] Design system tokens + focus/research density
-- [ ] Object model package
+- [x] Object model package (Zod schemas, factories, reading order)
 - [ ] Canvas engine spike (WebGL + SVG, pan/zoom, paint logging)
 - [ ] Local persistence (IndexedDB)
 - [ ] Note tool + selection

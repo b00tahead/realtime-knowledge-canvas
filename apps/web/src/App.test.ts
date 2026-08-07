@@ -1,9 +1,22 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { OBJECT_MODEL_VERSION } from "@rkc/object-model";
+import {
+  OBJECT_MODEL_VERSION,
+  createEmptyDocument,
+  createNote,
+  listInReadingOrder,
+  upsertObject,
+} from "@rkc/object-model";
 
 describe("web scaffold", () => {
   it("depends on a stable object model version", () => {
     assert.equal(OBJECT_MODEL_VERSION, 1);
+  });
+
+  it("can build a small document graph for the shell demo", () => {
+    let doc = createEmptyDocument("t", "Test");
+    doc = upsertObject(doc, createNote("First", { id: "a" }));
+    doc = upsertObject(doc, createNote("Second", { id: "b" }));
+    assert.equal(listInReadingOrder(doc).length, 2);
   });
 });
