@@ -8,7 +8,7 @@ The canvas is the product — not a document editor with a map view bolted on. M
 
 ## Status
 
-**Slice 1 in progress** — design system landed; next is engine + offline canvas.
+**Slice 1 in progress** — design system, object model, and canvas engine spike landed; next is offline persistence.
 
 | Slice | Goal | Status |
 |-------|------|--------|
@@ -33,7 +33,7 @@ apps/
   web/                 React + TypeScript client (Vite)
   api/                 Node/TS BFF (Slice 2+)
 packages/
-  canvas-engine/       WebGL + SVG canvas engine
+  canvas-engine/       WebGL + SVG dual-surface engine (pan/zoom, cull, paint HUD)
   design-system/       Tokens, density modes, components
   object-model/        Zod schemas + document ops (shared by all layers)
   sync-protocol/       CRDT/presence adapters (Yjs behind interface)

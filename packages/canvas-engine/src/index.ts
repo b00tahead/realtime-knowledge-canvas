@@ -1,9 +1,41 @@
 /**
- * Canvas engine public API.
- * Dual-surface: WebGL scene + SVG/DOM interaction overlay (built out in Slice 1).
+ * @rkc/canvas-engine
+ *
+ * Dual-surface infinite canvas: WebGL bulk geometry + SVG a11y/hit overlay.
+ * Framework-agnostic — host from React/Vue/vanilla via `CanvasEngine`.
  */
 
-export type { Camera, Vec2, EngineStats } from "./types.js";
-export { createCamera, screenToWorld, worldToScreen } from "./camera.js";
-
 export const ENGINE_NAME = "@rkc/canvas-engine" as const;
+export { PAINT_BUDGET_MS } from "./types.js";
+
+export type {
+  AABB,
+  Camera,
+  EngineOptions,
+  EngineStats,
+  RenderRect,
+  Vec2,
+  ViewportSize,
+} from "./types.js";
+
+export {
+  clampZoom,
+  createCamera,
+  DEFAULT_MAX_ZOOM,
+  DEFAULT_MIN_ZOOM,
+  panByScreen,
+  screenToWorld,
+  visibleWorldBounds,
+  worldToScreen,
+  zoomAtScreen,
+} from "./camera.js";
+
+export { aabbIntersects, cullRects, rectToAABB } from "./spatial.js";
+export { parseColor, paletteColor, NOTE_PALETTE } from "./color.js";
+export {
+  createStressRects,
+  documentToRenderRects,
+  objectsToRenderRects,
+} from "./scene.js";
+export { PerfTracker } from "./perf.js";
+export { CanvasEngine } from "./engine.js";
