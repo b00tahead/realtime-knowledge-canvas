@@ -11,11 +11,13 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./tokens.css": "./src/tokens.css"
+    "./tokens.css": "./src/tokens.css",
+    "./components.css": "./src/components.css"
   },
   "files": [
     "dist",
-    "src/tokens.css"
+    "src/tokens.css",
+    "src/components.css"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -24,8 +26,16 @@
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "clean": "rm -rf dist"
   },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

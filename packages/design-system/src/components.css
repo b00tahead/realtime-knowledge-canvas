@@ -1,0 +1,441 @@
+/**
+ * RKC primitive component styles.
+ * Class prefix: rkc-
+ * Pair with tokens.css. No one-off colors.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Utilities                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.rkc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rkc-live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rkc-skip-link {
+  position: absolute;
+  left: var(--rkc-space-3);
+  top: var(--rkc-space-3);
+  z-index: var(--rkc-z-skip-link);
+  padding: var(--rkc-space-2) var(--rkc-space-3);
+  background: var(--rkc-color-surface);
+  border: 1px solid var(--rkc-color-border);
+  border-radius: var(--rkc-radius-sm);
+  color: var(--rkc-color-text);
+  text-decoration: none;
+  font-size: var(--rkc-font-size-sm);
+  font-weight: var(--rkc-font-weight-medium);
+  box-shadow: var(--rkc-shadow-md);
+  transform: translateY(-200%);
+  transition: transform var(--rkc-motion-duration) var(--rkc-motion-ease);
+}
+
+.rkc-skip-link:focus {
+  transform: translateY(0);
+  outline: var(--rkc-focus-ring-width) solid var(--rkc-color-focus-ring);
+  outline-offset: var(--rkc-focus-ring-offset);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Button                                                                     */
+/* -------------------------------------------------------------------------- */
+
+.rkc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--rkc-space-2);
+  min-height: var(--rkc-control-height);
+  padding: 0 var(--rkc-control-padding-x);
+  border-radius: var(--rkc-radius-sm);
+  border: 1px solid transparent;
+  font-family: var(--rkc-font-sans);
+  font-size: var(--rkc-font-size-sm);
+  font-weight: var(--rkc-font-weight-medium);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color var(--rkc-motion-duration-fast) var(--rkc-motion-ease),
+    border-color var(--rkc-motion-duration-fast) var(--rkc-motion-ease),
+    color var(--rkc-motion-duration-fast) var(--rkc-motion-ease);
+}
+
+.rkc-button:focus-visible {
+  outline: var(--rkc-focus-ring-width) solid var(--rkc-color-focus-ring);
+  outline-offset: var(--rkc-focus-ring-offset);
+}
+
+.rkc-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rkc-button--primary {
+  background: var(--rkc-color-accent);
+  color: var(--rkc-color-accent-contrast);
+}
+
+.rkc-button--primary:hover:not(:disabled) {
+  background: var(--rkc-color-accent-hover);
+}
+
+.rkc-button--secondary {
+  background: var(--rkc-color-surface);
+  color: var(--rkc-color-text);
+  border-color: var(--rkc-color-border);
+}
+
+.rkc-button--secondary:hover:not(:disabled) {
+  background: var(--rkc-color-surface-hover);
+  border-color: var(--rkc-color-border-strong);
+}
+
+.rkc-button--ghost {
+  background: transparent;
+  color: var(--rkc-color-text-muted);
+}
+
+.rkc-button--ghost:hover:not(:disabled) {
+  background: var(--rkc-color-surface-hover);
+  color: var(--rkc-color-text);
+}
+
+.rkc-button--danger {
+  background: var(--rkc-color-danger-muted);
+  color: var(--rkc-color-danger);
+  border-color: color-mix(in srgb, var(--rkc-color-danger) 35%, transparent);
+}
+
+.rkc-button--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rkc-color-danger) 24%, transparent);
+}
+
+.rkc-button--icon {
+  width: var(--rkc-control-height);
+  padding: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Select / field                                                             */
+/* -------------------------------------------------------------------------- */
+
+.rkc-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rkc-space-1);
+  min-width: 0;
+}
+
+.rkc-field__label {
+  font-size: var(--rkc-font-size-xs);
+  font-weight: var(--rkc-font-weight-medium);
+  color: var(--rkc-color-text-muted);
+}
+
+.rkc-select {
+  appearance: none;
+  min-height: var(--rkc-control-height);
+  padding: 0 calc(var(--rkc-control-padding-x) + 1rem) 0 var(--rkc-control-padding-x);
+  background-color: var(--rkc-color-bg);
+  background-image: linear-gradient(45deg, transparent 50%, var(--rkc-color-text-muted) 50%),
+    linear-gradient(135deg, var(--rkc-color-text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 12px) calc(50% - 2px),
+    calc(100% - 7px) calc(50% - 2px);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  color: var(--rkc-color-text);
+  border: 1px solid var(--rkc-color-border);
+  border-radius: var(--rkc-radius-sm);
+  font-family: var(--rkc-font-sans);
+  font-size: var(--rkc-font-size-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rkc-select:hover {
+  border-color: var(--rkc-color-border-strong);
+}
+
+.rkc-select:focus-visible {
+  outline: var(--rkc-focus-ring-width) solid var(--rkc-color-focus-ring);
+  outline-offset: var(--rkc-focus-ring-offset);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Badge                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.rkc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rkc-space-1);
+  min-height: 1.25rem;
+  padding: 0 var(--rkc-space-2);
+  border-radius: var(--rkc-radius-full);
+  font-size: var(--rkc-font-size-xs);
+  font-weight: var(--rkc-font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rkc-badge--neutral {
+  background: var(--rkc-color-surface-active);
+  color: var(--rkc-color-text-muted);
+}
+
+.rkc-badge--success {
+  background: var(--rkc-color-success-muted);
+  color: var(--rkc-color-success);
+}
+
+.rkc-badge--warning {
+  background: var(--rkc-color-warning-muted);
+  color: var(--rkc-color-warning);
+}
+
+.rkc-badge--danger {
+  background: var(--rkc-color-danger-muted);
+  color: var(--rkc-color-danger);
+}
+
+.rkc-badge--info {
+  background: var(--rkc-color-info-muted);
+  color: var(--rkc-color-info);
+}
+
+.rkc-badge__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: var(--rkc-radius-full);
+  background: currentColor;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Toolbar                                                                    */
+/* -------------------------------------------------------------------------- */
+
+.rkc-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rkc-space-4);
+  min-height: var(--rkc-toolbar-height);
+  padding: 0 var(--rkc-space-4);
+  border-bottom: 1px solid var(--rkc-color-border);
+  background: var(--rkc-color-surface);
+  z-index: var(--rkc-z-toolbar);
+}
+
+.rkc-toolbar__start,
+.rkc-toolbar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--rkc-space-3);
+  min-width: 0;
+}
+
+.rkc-toolbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--rkc-space-3);
+  min-width: 0;
+}
+
+.rkc-toolbar__logo {
+  flex-shrink: 0;
+  color: var(--rkc-color-accent);
+  font-size: var(--rkc-font-size-lg);
+  line-height: 1;
+}
+
+.rkc-toolbar__title {
+  margin: 0;
+  font-size: var(--rkc-font-size-md);
+  font-weight: var(--rkc-font-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--rkc-color-text);
+}
+
+.rkc-toolbar__subtitle {
+  margin: 0;
+  font-size: var(--rkc-font-size-sm);
+  color: var(--rkc-color-text-muted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Panel                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.rkc-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rkc-space-4);
+  background: var(--rkc-color-surface);
+  border-left: 1px solid var(--rkc-color-border);
+  padding: var(--rkc-space-4);
+  overflow: auto;
+  z-index: var(--rkc-z-panel);
+  width: 100%;
+  max-width: var(--rkc-panel-width);
+}
+
+.rkc-panel--flush {
+  padding: 0;
+}
+
+.rkc-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rkc-space-3);
+}
+
+.rkc-panel__title {
+  margin: 0;
+  font-size: var(--rkc-font-size-md);
+  font-weight: var(--rkc-font-weight-semibold);
+  color: var(--rkc-color-text);
+}
+
+.rkc-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rkc-space-3);
+  min-height: 0;
+  flex: 1;
+}
+
+.rkc-panel__footer {
+  margin-top: auto;
+  padding-top: var(--rkc-space-3);
+  border-top: 1px solid var(--rkc-color-border);
+  font-size: var(--rkc-font-size-sm);
+  color: var(--rkc-color-text-muted);
+}
+
+@media (max-width: 720px) {
+  .rkc-panel {
+    max-width: none;
+    border-left: none;
+    border-top: 1px solid var(--rkc-color-border);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Surface card                                                               */
+/* -------------------------------------------------------------------------- */
+
+.rkc-card {
+  background: color-mix(in srgb, var(--rkc-color-surface) 92%, transparent);
+  border: 1px solid var(--rkc-color-border);
+  border-radius: var(--rkc-radius-md);
+  padding: var(--rkc-space-5);
+  box-shadow: var(--rkc-shadow-sm);
+  backdrop-filter: blur(8px);
+}
+
+.rkc-card__title {
+  margin: 0 0 var(--rkc-space-2);
+  font-size: var(--rkc-font-size-lg);
+  font-weight: var(--rkc-font-weight-semibold);
+}
+
+.rkc-card__body {
+  margin: 0;
+  color: var(--rkc-color-text-muted);
+  font-size: var(--rkc-font-size-sm);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Token swatch (gallery / inspector)                                         */
+/* -------------------------------------------------------------------------- */
+
+.rkc-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: var(--rkc-space-2);
+}
+
+.rkc-swatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rkc-space-1);
+  min-width: 0;
+}
+
+.rkc-swatch__chip {
+  height: 2rem;
+  border-radius: var(--rkc-radius-sm);
+  border: 1px solid var(--rkc-color-border);
+  box-shadow: var(--rkc-shadow-sm);
+}
+
+.rkc-swatch__label {
+  font-size: var(--rkc-font-size-xs);
+  color: var(--rkc-color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Stack / text helpers                                                       */
+/* -------------------------------------------------------------------------- */
+
+.rkc-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rkc-space-3);
+}
+
+.rkc-stack--sm {
+  gap: var(--rkc-space-2);
+}
+
+.rkc-stack--lg {
+  gap: var(--rkc-space-4);
+}
+
+.rkc-text-muted {
+  color: var(--rkc-color-text-muted);
+}
+
+.rkc-text-sm {
+  font-size: var(--rkc-font-size-sm);
+}
+
+.rkc-text-xs {
+  font-size: var(--rkc-font-size-xs);
+}
+
+.rkc-code {
+  font-family: var(--rkc-font-mono);
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: var(--rkc-radius-xs);
+  background: var(--rkc-color-bg);
+  border: 1px solid var(--rkc-color-border);
+}
