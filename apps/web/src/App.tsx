@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Button,
@@ -25,14 +25,23 @@ import {
   getObject,
   listInReadingOrder,
   objectCount,
+  renameDocument,
   upsertObject,
+  type CanvasDocument,
 } from "@rkc/object-model";
 import {
   ENGINE_NAME,
   PAINT_BUDGET_MS,
   type EngineStats,
 } from "@rkc/canvas-engine";
-import { createInitialOfflineStatus } from "@rkc/offline";
+import {
+  DEFAULT_LOCAL_CANVAS_ID,
+  PersistenceSession,
+  createInitialOfflineStatus,
+  getDefaultCanvasStore,
+  saveStatusLabel,
+  type SaveStatus,
+} from "@rkc/offline";
 import { PROTOCOL_VERSION } from "@rkc/sync-protocol";
 import { CanvasHost } from "./components/CanvasHost";
 import styles from "./App.module.scss";
@@ -48,14 +57,16 @@ const THEME_OPTIONS = THEME_MODES.map((value) => ({
 }));
 
 const STRESS_OPTIONS = [
-  { value: "0", label: "Document (2 notes)" },
+  { value: "0", label: "Document (saved)" },
   { value: "100", label: "Stress 100" },
   { value: "1000", label: "Stress 1k" },
   { value: "5000", label: "Stress 5k" },
 ] as const;
 
-function buildDemoDocument() {
-  let d = createEmptyDocument("local-demo", "Personal research board");
+const NOTE_COLORS = ["#f5d76e", "#7eb6ff", "#7dcea0", "#f5a3c7", "#c4a1ff", "#f0a06a"];
+
+function buildDemoDocument(): CanvasDocument {
+  let d = createEmptyDocument(DEFAULT_LOCAL_CANVAS_ID, "Personal research board");
   d = upsertObject(
     d,
     createNote("Schema-validated notes live in @rkc/object-model", {
@@ -72,12 +83,30 @@ function buildDemoDocument() {
   );
   d = upsertObject(
     d,
-    createNote("Space-drag to pan · scroll to zoom · paint HUD top-left", {
+    createNote("Edits autosave to IndexedDB — reload to verify", {
       transform: { x: 120, y: 260, w: 300, h: 130 },
       color: "#7dcea0",
     }),
   );
   return d;
+}
+
+function saveBadgeTone(
+  status: SaveStatus,
+): "neutral" | "success" | "warning" | "danger" | "info" {
+  switch (status) {
+    case "saved":
+      return "success";
+    case "dirty":
+    case "saving":
+      return "warning";
+    case "error":
+      return "danger";
+    case "loading":
+      return "info";
+    default:
+      return "neutral";
+  }
 }
 
 export function App() {
@@ -87,15 +116,86 @@ export function App() {
   const [stress, setStress] = useState("0");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stats, setStats] = useState<EngineStats | null>(null);
+  const [doc, setDoc] = useState<CanvasDocument | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("loading");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [bootError, setBootError] = useState<string | null>(null);
 
-  const doc = useMemo(() => buildDemoDocument(), []);
+  const sessionRef = useRef<PersistenceSession | null>(null);
+  const offline = useMemo(() => createInitialOfflineStatus(), []);
+
+  const commitDoc = useCallback(
+    (next: CanvasDocument, opts?: { immediate?: boolean; announce?: string }) => {
+      setDoc(next);
+      sessionRef.current?.update(next, { immediate: opts?.immediate });
+      if (opts?.announce) setAnnounce(opts.announce);
+    },
+    [],
+  );
+
+  // Boot: open persistence session and load/create local canvas
+  useEffect(() => {
+    const store = getDefaultCanvasStore();
+    const session = new PersistenceSession({
+      store,
+      debounceMs: 400,
+      onStatus: (status, detail) => {
+        setSaveStatus(status);
+        if (detail?.at) setLastSavedAt(detail.at);
+        if (status === "error" && detail?.error) {
+          setAnnounce(`Save failed: ${detail.error}`);
+        }
+      },
+    });
+    sessionRef.current = session;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const loaded = await session.loadOrCreate(
+          DEFAULT_LOCAL_CANVAS_ID,
+          buildDemoDocument,
+        );
+        if (!cancelled) {
+          setDoc(loaded);
+          setLastSavedAt(loaded.updatedAt);
+          setAnnounce(
+            objectCount(loaded) > 0
+              ? "Loaded canvas from local storage"
+              : "Created new local canvas",
+          );
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : String(err);
+          setBootError(message);
+          setSaveStatus("error");
+          // Fallback in-memory demo so the engine still works
+          setDoc(buildDemoDocument());
+        }
+      }
+    })();
+
+    const onUnload = () => {
+      void session.flush();
+    };
+    window.addEventListener("beforeunload", onUnload);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("beforeunload", onUnload);
+      void session.flush().finally(() => session.dispose());
+      sessionRef.current = null;
+    };
+  }, []);
+
   const readingOrder = useMemo(
-    () => listInReadingOrder(doc).map((o) => o.a11y.name),
+    () => (doc ? listInReadingOrder(doc).map((o) => o.a11y.name) : []),
     [doc],
   );
-  const offline = useMemo(() => createInitialOfflineStatus(), []);
   const stressCount = stress === "0" ? null : Number(stress);
-  const selected = selectedId ? getObject(doc, selectedId) : undefined;
+  const selected =
+    doc && selectedId && !stressCount ? getObject(doc, selectedId) : undefined;
 
   const shellClass = [
     styles.app,
@@ -103,13 +203,50 @@ export function App() {
     densityClassName(density),
   ].join(" ");
 
+  const addNote = () => {
+    if (!doc) return;
+    const n = objectCount(doc);
+    const color = NOTE_COLORS[n % NOTE_COLORS.length];
+    const note = createNote(`Note ${n + 1}`, {
+      transform: {
+        x: 80 + (n % 5) * 40,
+        y: 80 + (n % 4) * 50,
+        w: 220,
+        h: 120,
+      },
+      color,
+    });
+    commitDoc(upsertObject(doc, note), {
+      announce: `Added ${note.a11y.name} (saving locally)`,
+    });
+  };
+
+  const resetDemo = () => {
+    const fresh = buildDemoDocument();
+    commitDoc(fresh, {
+      immediate: true,
+      announce: "Reset demo canvas and saved",
+    });
+    setSelectedId(null);
+    setStress("0");
+  };
+
+  const onTitleBlur = (title: string) => {
+    if (!doc) return;
+    const trimmed = title.trim() || "Untitled canvas";
+    if (trimmed === doc.title) return;
+    commitDoc(renameDocument(doc, trimmed), {
+      announce: `Renamed canvas to ${trimmed}`,
+    });
+  };
+
   return (
     <div className={shellClass}>
       <SkipLink />
 
       <Toolbar
         title="Realtime Knowledge Canvas"
-        subtitle="Slice 1 · engine spike"
+        subtitle="Slice 1 · local-first"
         end={
           <>
             <Select
@@ -122,8 +259,8 @@ export function App() {
                 setSelectedId(null);
                 setAnnounce(
                   e.target.value === "0"
-                    ? "Showing document objects"
-                    : `Stress test ${e.target.value} objects`,
+                    ? "Showing saved document"
+                    : `Stress test ${e.target.value} objects (not saved)`,
                 );
               }}
             />
@@ -153,6 +290,9 @@ export function App() {
                 }
               }}
             />
+            <Badge tone={saveBadgeTone(saveStatus)} dot>
+              {saveStatusLabel(saveStatus)}
+            </Badge>
             <Badge tone={offline.online ? "success" : "warning"} dot>
               {offline.online ? "Online" : "Offline"}
             </Badge>
@@ -162,96 +302,124 @@ export function App() {
 
       <main id="main" className={styles.main}>
         <section className={styles.canvasStage} aria-label="Canvas stage">
-          <CanvasHost
-            document={doc}
-            stressCount={stressCount}
-            onSelect={(id) => {
-              setSelectedId(id);
-              if (id) {
-                const obj = getObject(doc, id);
-                setAnnounce(
-                  obj ? `Selected ${obj.a11y.name}` : `Selected ${id}`,
-                );
-              } else {
-                setAnnounce("Selection cleared");
-              }
-            }}
-            onStats={setStats}
-          />
+          {doc ? (
+            <CanvasHost
+              document={doc}
+              stressCount={stressCount}
+              onSelect={(id) => {
+                setSelectedId(id);
+                if (id && doc) {
+                  const obj = getObject(doc, id);
+                  setAnnounce(
+                    obj ? `Selected ${obj.a11y.name}` : `Selected ${id}`,
+                  );
+                } else {
+                  setAnnounce("Selection cleared");
+                }
+              }}
+              onStats={setStats}
+            />
+          ) : (
+            <div className={styles.loading} role="status">
+              Loading canvas…
+            </div>
+          )}
         </section>
 
         <Panel
-          title="Engine"
+          title="Local store"
           label="Inspector"
           footer={
             <>
-              Budget <code className="rkc-code">{PAINT_BUDGET_MS}ms</code> ·{" "}
+              IDB <code className="rkc-code">{DEFAULT_LOCAL_CANVAS_ID}</code> ·{" "}
               <code className="rkc-code">{ENGINE_NAME}</code>
             </>
           }
         >
           <div className="rkc-stack rkc-stack--sm">
-            <p className="m-0 text-rkc-sm text-rkc-muted">
-              Dual-surface spike: WebGL batches rects; SVG overlays labels and
-              hit targets. Cull uses world-space AABB.
-            </p>
+            {bootError ? (
+              <p className="m-0 text-rkc-sm" style={{ color: "var(--rkc-color-danger)" }}>
+                Storage error: {bootError}. Using in-memory fallback.
+              </p>
+            ) : (
+              <p className="m-0 text-rkc-sm text-rkc-muted">
+                Document autosaves to IndexedDB. Stress scenes stay in memory
+                only. Reload the page to verify persistence.
+              </p>
+            )}
+
+            {doc ? (
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Title</span>
+                <input
+                  className={styles.input}
+                  key={doc.id + doc.updatedAt}
+                  defaultValue={doc.title}
+                  onBlur={(e) => onTitleBlur(e.target.value)}
+                  aria-label="Canvas title"
+                />
+              </label>
+            ) : null}
+
             <dl className={styles.meta}>
               <div>
                 <dt>Schema</dt>
                 <dd>v{OBJECT_MODEL_VERSION}</dd>
               </div>
               <div>
-                <dt>Doc objects</dt>
-                <dd>{objectCount(doc)}</dd>
+                <dt>Objects</dt>
+                <dd>{doc ? objectCount(doc) : "—"}</dd>
               </div>
               <div>
-                <dt>Last paint</dt>
+                <dt>Save</dt>
                 <dd>
-                  {stats
-                    ? `${stats.lastPaintMs.toFixed(2)} ms`
+                  <Badge tone={saveBadgeTone(saveStatus)}>
+                    {saveStatusLabel(saveStatus)}
+                  </Badge>
+                </dd>
+              </div>
+              <div>
+                <dt>Last saved</dt>
+                <dd>
+                  {lastSavedAt
+                    ? new Date(lastSavedAt).toLocaleTimeString()
                     : "—"}
                 </dd>
               </div>
               <div>
-                <dt>Visible</dt>
+                <dt>Paint</dt>
                 <dd>
-                  {stats
-                    ? `${stats.visibleCount} / ${stats.objectCount}`
-                    : "—"}
+                  {stats ? `${stats.lastPaintMs.toFixed(2)} ms` : "—"}
                 </dd>
-              </div>
-              <div>
-                <dt>Sync</dt>
-                <dd>v{PROTOCOL_VERSION} (Slice 2)</dd>
               </div>
               <div>
                 <dt>Budget</dt>
                 <dd>
                   {stats ? (
                     <Badge tone={stats.withinBudget ? "success" : "warning"}>
-                      {stats.withinBudget ? "OK" : "Over"}
+                      {stats.withinBudget ? "OK" : "Over"} {PAINT_BUDGET_MS}ms
                     </Badge>
                   ) : (
                     "—"
                   )}
                 </dd>
               </div>
+              <div>
+                <dt>Sync protocol</dt>
+                <dd>v{PROTOCOL_VERSION} (Slice 2)</dd>
+              </div>
             </dl>
 
-            {selected && !stressCount ? (
+            {selected ? (
               <div className="rkc-stack rkc-stack--sm">
                 <p className="rkc-text-xs rkc-text-muted" style={{ margin: 0 }}>
                   Selection
                 </p>
                 <p className="m-0 text-rkc-sm">{selected.a11y.name}</p>
-                <p className="m-0 text-rkc-xs text-rkc-muted">
-                  {selected.type} · ({selected.transform.x},{" "}
-                  {selected.transform.y})
-                </p>
               </div>
             ) : null}
 
-            {!stressCount ? (
+            {!stressCount && readingOrder.length > 0 ? (
               <div className="rkc-stack rkc-stack--sm">
                 <p className="rkc-text-xs rkc-text-muted" style={{ margin: 0 }}>
                   Reading order
@@ -263,33 +431,33 @@ export function App() {
             ) : null}
 
             <div className={styles.cardActions}>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setStress("1000");
-                  setAnnounce("Loaded 1000 stress objects");
-                }}
-              >
-                Load 1k
+              <Button variant="primary" onClick={addNote} disabled={!doc || !!stressCount}>
+                Add note
+              </Button>
+              <Button variant="secondary" onClick={resetDemo} disabled={!doc}>
+                Reset demo
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => {
-                  setStress("0");
-                  setAnnounce("Restored document scene");
+                  void sessionRef.current?.flush().then(() => {
+                    setAnnounce("Flushed save to IndexedDB");
+                  });
                 }}
+                disabled={!doc}
               >
-                Reset scene
+                Save now
               </Button>
             </div>
 
             <ol className={styles.steps}>
               <li>Design tokens + density</li>
               <li>Object model (Zod)</li>
+              <li>Engine spike</li>
               <li>
-                <strong>Engine spike</strong>
+                <strong>Local persistence</strong>
               </li>
-              <li>Local persistence</li>
+              <li>Note tools + a11y</li>
             </ol>
           </div>
         </Panel>

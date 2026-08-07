@@ -1,32 +1,39 @@
 /**
- * Offline-first helpers (IndexedDB, service worker registration, background sync).
- * Full persistence lands in Slice 1; this package owns the public surface.
+ * @rkc/offline
+ *
+ * Local-first persistence (IndexedDB) + online/save status helpers.
+ * Service worker registration arrives in a later Slice 1 PR.
  */
 
-export const OFFLINE_DB_NAME = "rkc-offline" as const;
-export const OFFLINE_DB_VERSION = 1 as const;
+export {
+  DEFAULT_LOCAL_CANVAS_ID,
+  OFFLINE_DB_NAME,
+  OFFLINE_DB_VERSION,
+  STORE_CANVASES,
+} from "./constants.js";
 
-export type SyncStatus = "idle" | "pending" | "syncing" | "error";
+export {
+  createInitialOfflineStatus,
+  getBrowserOnlineStatus,
+  saveStatusLabel,
+  type OfflineStatus,
+  type SaveStatus,
+  type SyncStatus,
+} from "./status.js";
 
-export interface OfflineStatus {
-  online: boolean;
-  sync: SyncStatus;
-}
+export { openOfflineDb, idbRequest, idbTxDone } from "./db.js";
+// idbRequest / idbTxDone exported for advanced callers and tests
 
-export function getBrowserOnlineStatus(): boolean {
-  // Node may expose a partial `navigator` without a reliable `onLine` flag.
-  if (
-    typeof navigator === "undefined" ||
-    typeof navigator.onLine !== "boolean"
-  ) {
-    return true;
-  }
-  return navigator.onLine;
-}
+export {
+  CanvasStore,
+  getDefaultCanvasStore,
+  resetDefaultCanvasStore,
+  type CanvasStoreOptions,
+} from "./canvas-store.js";
 
-export function createInitialOfflineStatus(): OfflineStatus {
-  return {
-    online: getBrowserOnlineStatus(),
-    sync: "idle",
-  };
-}
+export {
+  PersistenceSession,
+  type PersistenceSessionOptions,
+} from "./persistence-session.js";
+
+export type { CanvasMeta, CanvasRecord } from "./types.js";

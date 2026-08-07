@@ -8,7 +8,7 @@ The canvas is the product — not a document editor with a map view bolted on. M
 
 ## Status
 
-**Slice 1 in progress** — design system, object model, and canvas engine spike landed; next is offline persistence.
+**Slice 1 in progress** — design system, object model, engine, and IndexedDB persistence landed; next is note tools + a11y navigation.
 
 | Slice | Goal | Status |
 |-------|------|--------|
@@ -37,7 +37,7 @@ packages/
   design-system/       Tokens, density modes, components
   object-model/        Zod schemas + document ops (shared by all layers)
   sync-protocol/       CRDT/presence adapters (Yjs behind interface)
-  offline/             Service worker + IndexedDB helpers
+  offline/             IndexedDB canvas store + autosave (SW later)
 services/              Go microservices (presence, AI) — Slice 2–3
 docs/adr/              Architecture decision records
 ```

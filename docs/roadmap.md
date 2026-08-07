@@ -6,7 +6,7 @@
 - [x] Design system tokens + focus/research density
 - [x] Object model package (Zod schemas, factories, reading order)
 - [x] Canvas engine spike (WebGL + SVG, pan/zoom, paint logging)
-- [ ] Local persistence (IndexedDB)
+- [x] Local persistence (IndexedDB + autosave)
 - [ ] Note tool + selection
 - [ ] Keyboard + a11y navigation
 - [ ] Offline shell (service worker)
