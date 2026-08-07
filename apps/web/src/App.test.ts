@@ -7,6 +7,7 @@ import {
   listInReadingOrder,
   upsertObject,
 } from "@rkc/object-model";
+import { DEFAULT_LOCAL_CANVAS_ID, saveStatusLabel } from "@rkc/offline";
 
 describe("web scaffold", () => {
   it("depends on a stable object model version", () => {
@@ -14,9 +15,13 @@ describe("web scaffold", () => {
   });
 
   it("can build a small document graph for the shell demo", () => {
-    let doc = createEmptyDocument("t", "Test");
+    let doc = createEmptyDocument(DEFAULT_LOCAL_CANVAS_ID, "Test");
     doc = upsertObject(doc, createNote("First", { id: "a" }));
     doc = upsertObject(doc, createNote("Second", { id: "b" }));
     assert.equal(listInReadingOrder(doc).length, 2);
+  });
+
+  it("exposes save status labels for the toolbar badge", () => {
+    assert.match(saveStatusLabel("saved"), /Saved/i);
   });
 });

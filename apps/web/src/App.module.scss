@@ -1,5 +1,3 @@
-/* App shell layout only — chrome primitives come from @rkc/design-system */
-
 .app {
   min-height: 100dvh;
   display: flex;
@@ -16,42 +14,30 @@
 
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: minmax(18rem, 1fr) auto;
   }
 }
 
 .canvasStage {
   position: relative;
   min-height: 16rem;
-  outline: none;
-  background:
-    radial-gradient(
-      circle at 1px 1px,
-      var(--rkc-canvas-dot) 1px,
-      transparent 0
-    )
-    0 0 / var(--rkc-canvas-grid-size) var(--rkc-canvas-grid-size);
-
-  &:focus-visible {
-    box-shadow: inset 0 0 0 var(--rkc-focus-ring-width) var(--rkc-color-focus-ring);
-  }
+  min-width: 0;
+  overflow: hidden;
 }
 
-.canvasPlaceholder {
-  position: absolute;
-  inset: var(--rkc-space-6);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  max-width: 36rem;
-  margin: auto;
+.loading {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--rkc-color-text-muted);
+  font-size: var(--rkc-font-size-sm);
 }
 
 .meta {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--rkc-space-3);
-  margin: var(--rkc-space-4) 0 0;
+  margin: 0;
   font-size: var(--rkc-font-size-sm);
 
   dt {
@@ -65,20 +51,53 @@
   }
 }
 
-.readingOrder {
-  grid-column: 1 / -1;
-  font-variant-numeric: normal;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rkc-space-1);
+}
+
+.fieldLabel {
+  font-size: var(--rkc-font-size-xs);
+  font-weight: var(--rkc-font-weight-medium);
+  color: var(--rkc-color-text-muted);
+}
+
+.input {
+  min-height: var(--rkc-control-height);
+  padding: 0 var(--rkc-control-padding-x);
+  border: 1px solid var(--rkc-color-border);
+  border-radius: var(--rkc-radius-sm);
+  background: var(--rkc-color-bg);
   color: var(--rkc-color-text);
+  font: inherit;
+  font-size: var(--rkc-font-size-sm);
+
+  &:focus-visible {
+    outline: var(--rkc-focus-ring-width) solid var(--rkc-color-focus-ring);
+    outline-offset: var(--rkc-focus-ring-offset);
+  }
+}
+
+.textarea {
+  min-height: 5.5rem;
+  padding: var(--rkc-space-2) var(--rkc-control-padding-x);
+  border: 1px solid var(--rkc-color-border);
+  border-radius: var(--rkc-radius-sm);
+  background: var(--rkc-color-bg);
+  color: var(--rkc-color-text);
+  font: inherit;
+  font-size: var(--rkc-font-size-sm);
+  line-height: 1.4;
+  resize: vertical;
+
+  &:focus-visible {
+    outline: var(--rkc-focus-ring-width) solid var(--rkc-color-focus-ring);
+    outline-offset: var(--rkc-focus-ring-offset);
+  }
 }
 
 .cardActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--rkc-space-2);
-  margin-top: var(--rkc-space-4);
-}
-
-.badgeRow {
   display: flex;
   flex-wrap: wrap;
   gap: var(--rkc-space-2);
@@ -92,5 +111,10 @@
 
   li + li {
     margin-top: var(--rkc-space-2);
+  }
+
+  strong {
+    color: var(--rkc-color-text);
+    font-weight: var(--rkc-font-weight-semibold);
   }
 }

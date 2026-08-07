@@ -8,7 +8,7 @@ The canvas is the product — not a document editor with a map view bolted on. M
 
 ## Status
 
-**Slice 1 in progress** — design system landed; next is engine + offline canvas.
+**Slice 1 in progress** — design system, object model, engine, IndexedDB, and note tools landed; next is keyboard + a11y navigation.
 
 | Slice | Goal | Status |
 |-------|------|--------|
@@ -33,11 +33,11 @@ apps/
   web/                 React + TypeScript client (Vite)
   api/                 Node/TS BFF (Slice 2+)
 packages/
-  canvas-engine/       WebGL + SVG canvas engine
+  canvas-engine/       WebGL + SVG dual-surface engine (pan/zoom, cull, paint HUD)
   design-system/       Tokens, density modes, components
   object-model/        Zod schemas + document ops (shared by all layers)
   sync-protocol/       CRDT/presence adapters (Yjs behind interface)
-  offline/             Service worker + IndexedDB helpers
+  offline/             IndexedDB canvas store + autosave (SW later)
 services/              Go microservices (presence, AI) — Slice 2–3
 docs/adr/              Architecture decision records
 ```
@@ -92,7 +92,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Architecture notes live under [`docs/`
 
 1. Engine spike + design tokens + object model  
 2. Notes, selection, pan/zoom, local persistence  
-3. Keyboard object graph + offline shell  
+3. Keyboard object graph + offline shell (service worker)  
 4. Multiplayer presence + CRDT content channel  
 5. AI jobs that stream validated canvas events  
 

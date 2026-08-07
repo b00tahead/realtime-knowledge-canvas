@@ -18,10 +18,12 @@ import {
   listInReadingOrder,
   listObjectsByType,
   migrateDocument,
+  moveObject,
   objectCount,
   parseCanvasDocument,
   parseCanvasObject,
   removeObject,
+  updateNoteText,
   updateObject,
   upsertObject,
   validateDocumentGraph,
@@ -76,6 +78,16 @@ describe("document ops", () => {
     doc = updateObject(doc, "n1", { text: "Two" } as Partial<typeof note>, 200);
     assert.equal((getObject(doc, "n1") as typeof note).text, "Two");
     assert.equal(doc.updatedAt, 200);
+
+    doc = moveObject(doc, "n1", { x: 50, y: 75 }, 250);
+    const moved = getObject(doc, "n1");
+    assert.equal(moved?.transform.x, 50);
+    assert.equal(moved?.transform.y, 75);
+
+    doc = updateNoteText(doc, "n1", "Renamed body\nsecond", 300);
+    const renamed = getObject(doc, "n1") as typeof note;
+    assert.equal(renamed.text, "Renamed body\nsecond");
+    assert.equal(renamed.a11y.name, "Renamed body");
 
     const other = createNote("Other", { id: "n2" });
     doc = upsertObject(doc, other);
