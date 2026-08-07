@@ -1,0 +1,62 @@
+/**
+ * RKC design tokens — calm focus by default; research density remaps spacing/type.
+ * Full palette and component skins expand in Slice 1 PR2.
+ */
+
+:root,
+.rkc-density-focus {
+  color-scheme: light dark;
+
+  --rkc-color-bg: #0f1115;
+  --rkc-color-surface: #171a21;
+  --rkc-color-border: #2a303c;
+  --rkc-color-text: #e8eaef;
+  --rkc-color-text-muted: #9aa3b5;
+  --rkc-color-accent: #6ea8fe;
+  --rkc-color-focus-ring: #8ec5ff;
+
+  --rkc-space-1: 0.25rem;
+  --rkc-space-2: 0.5rem;
+  --rkc-space-3: 0.75rem;
+  --rkc-space-4: 1rem;
+  --rkc-space-5: 1.5rem;
+  --rkc-space-6: 2rem;
+
+  --rkc-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --rkc-font-size-sm: 0.875rem;
+  --rkc-font-size-md: 1rem;
+  --rkc-font-size-lg: 1.125rem;
+  --rkc-line-height: 1.5;
+
+  --rkc-radius-sm: 0.375rem;
+  --rkc-radius-md: 0.5rem;
+  --rkc-toolbar-height: 3rem;
+  --rkc-panel-width: 20rem;
+}
+
+.rkc-density-research {
+  --rkc-space-1: 0.2rem;
+  --rkc-space-2: 0.4rem;
+  --rkc-space-3: 0.6rem;
+  --rkc-space-4: 0.8rem;
+  --rkc-space-5: 1.1rem;
+  --rkc-space-6: 1.5rem;
+
+  --rkc-font-size-sm: 0.8125rem;
+  --rkc-font-size-md: 0.9375rem;
+  --rkc-font-size-lg: 1.0625rem;
+  --rkc-line-height: 1.4;
+
+  --rkc-toolbar-height: 2.5rem;
+  --rkc-panel-width: 22rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rkc-motion-duration: 0ms;
+  }
+}
+
+:root {
+  --rkc-motion-duration: 160ms;
+}
