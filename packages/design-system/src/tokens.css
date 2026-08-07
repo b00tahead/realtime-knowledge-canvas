@@ -1,62 +1,233 @@
 /**
- * RKC design tokens — calm focus by default; research density remaps spacing/type.
- * Full palette and component skins expand in Slice 1 PR2.
+ * RKC design tokens
+ *
+ * - Default theme: calm dark (focus density)
+ * - `.rkc-theme-light` — light surfaces
+ * - `.rkc-density-focus` / `.rkc-density-research` — spacing & type scale
+ *
+ * Apps should set theme + density classes on a root element (usually <html> or app shell).
+ * Prefer these variables over one-off hex values.
  */
+
+/* -------------------------------------------------------------------------- */
+/* Base / dark theme (default)                                                */
+/* -------------------------------------------------------------------------- */
+
+:root,
+.rkc-theme-dark {
+  color-scheme: dark;
+
+  /* Neutrals */
+  --rkc-color-bg: #0f1115;
+  --rkc-color-bg-elevated: #12151c;
+  --rkc-color-surface: #171a21;
+  --rkc-color-surface-hover: #1d222c;
+  --rkc-color-surface-active: #232935;
+  --rkc-color-border: #2a303c;
+  --rkc-color-border-strong: #3a4252;
+  --rkc-color-text: #e8eaef;
+  --rkc-color-text-muted: #9aa3b5;
+  --rkc-color-text-subtle: #6b7385;
+  --rkc-color-text-inverse: #0f1115;
+
+  /* Brand / accent */
+  --rkc-color-accent: #6ea8fe;
+  --rkc-color-accent-hover: #8bbcff;
+  --rkc-color-accent-muted: color-mix(in srgb, var(--rkc-color-accent) 18%, transparent);
+  --rkc-color-accent-contrast: #0a1628;
+
+  /* Semantic */
+  --rkc-color-success: #3ecf8e;
+  --rkc-color-success-muted: color-mix(in srgb, var(--rkc-color-success) 16%, transparent);
+  --rkc-color-warning: #f0b429;
+  --rkc-color-warning-muted: color-mix(in srgb, var(--rkc-color-warning) 16%, transparent);
+  --rkc-color-danger: #f07178;
+  --rkc-color-danger-muted: color-mix(in srgb, var(--rkc-color-danger) 16%, transparent);
+  --rkc-color-info: #6ea8fe;
+  --rkc-color-info-muted: color-mix(in srgb, var(--rkc-color-info) 16%, transparent);
+
+  /* Focus / a11y */
+  --rkc-color-focus-ring: #8ec5ff;
+  --rkc-focus-ring-width: 2px;
+  --rkc-focus-ring-offset: 2px;
+
+  /* Canvas object accents (notes, etc.) */
+  --rkc-note-yellow: #f5d76e;
+  --rkc-note-blue: #7eb6ff;
+  --rkc-note-green: #7dcea0;
+  --rkc-note-pink: #f5a3c7;
+  --rkc-note-purple: #c4a1ff;
+  --rkc-note-orange: #f0a06a;
+
+  /* Canvas chrome */
+  --rkc-canvas-dot: color-mix(in srgb, var(--rkc-color-border) 70%, transparent);
+  --rkc-canvas-grid-size: 24px;
+  --rkc-selection-fill: color-mix(in srgb, var(--rkc-color-accent) 14%, transparent);
+  --rkc-selection-stroke: var(--rkc-color-accent);
+
+  /* Elevation / shadow */
+  --rkc-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --rkc-shadow-md: 0 4px 16px rgb(0 0 0 / 0.4);
+  --rkc-shadow-lg: 0 12px 40px rgb(0 0 0 / 0.5);
+  --rkc-shadow-focus: 0 0 0 var(--rkc-focus-ring-width) var(--rkc-color-focus-ring);
+
+  /* Typography */
+  --rkc-font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --rkc-font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --rkc-font-weight-regular: 400;
+  --rkc-font-weight-medium: 500;
+  --rkc-font-weight-semibold: 600;
+
+  /* Radius */
+  --rkc-radius-xs: 0.25rem;
+  --rkc-radius-sm: 0.375rem;
+  --rkc-radius-md: 0.5rem;
+  --rkc-radius-lg: 0.75rem;
+  --rkc-radius-full: 9999px;
+
+  /* Z-index scale */
+  --rkc-z-base: 0;
+  --rkc-z-canvas: 1;
+  --rkc-z-overlay: 10;
+  --rkc-z-toolbar: 20;
+  --rkc-z-panel: 30;
+  --rkc-z-dropdown: 40;
+  --rkc-z-modal: 50;
+  --rkc-z-toast: 60;
+  --rkc-z-skip-link: 100;
+
+  /* Motion */
+  --rkc-motion-duration-fast: 100ms;
+  --rkc-motion-duration: 160ms;
+  --rkc-motion-duration-slow: 240ms;
+  --rkc-motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --rkc-motion-ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* Layout chrome (overridden by density) */
+  --rkc-toolbar-height: 3rem;
+  --rkc-panel-width: 20rem;
+  --rkc-control-height: 2rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Light theme                                                                */
+/* -------------------------------------------------------------------------- */
+
+.rkc-theme-light {
+  color-scheme: light;
+
+  --rkc-color-bg: #f4f5f8;
+  --rkc-color-bg-elevated: #ffffff;
+  --rkc-color-surface: #ffffff;
+  --rkc-color-surface-hover: #eef0f5;
+  --rkc-color-surface-active: #e4e7ef;
+  --rkc-color-border: #d5dae5;
+  --rkc-color-border-strong: #b8c0d0;
+  --rkc-color-text: #151922;
+  --rkc-color-text-muted: #5a6478;
+  --rkc-color-text-subtle: #8891a3;
+  --rkc-color-text-inverse: #f4f5f8;
+
+  --rkc-color-accent: #3b7ddd;
+  --rkc-color-accent-hover: #2f6bc4;
+  --rkc-color-accent-muted: color-mix(in srgb, var(--rkc-color-accent) 12%, transparent);
+  --rkc-color-accent-contrast: #ffffff;
+
+  --rkc-color-success: #1f9d63;
+  --rkc-color-warning: #c4880a;
+  --rkc-color-danger: #d64550;
+  --rkc-color-info: #3b7ddd;
+
+  --rkc-color-focus-ring: #3b7ddd;
+
+  --rkc-canvas-dot: color-mix(in srgb, var(--rkc-color-border) 85%, transparent);
+
+  --rkc-shadow-sm: 0 1px 2px rgb(15 17 21 / 0.06);
+  --rkc-shadow-md: 0 4px 16px rgb(15 17 21 / 0.08);
+  --rkc-shadow-lg: 0 12px 40px rgb(15 17 21 / 0.12);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Density: focus (default, calm)                                             */
+/* -------------------------------------------------------------------------- */
 
 :root,
 .rkc-density-focus {
-  color-scheme: light dark;
-
-  --rkc-color-bg: #0f1115;
-  --rkc-color-surface: #171a21;
-  --rkc-color-border: #2a303c;
-  --rkc-color-text: #e8eaef;
-  --rkc-color-text-muted: #9aa3b5;
-  --rkc-color-accent: #6ea8fe;
-  --rkc-color-focus-ring: #8ec5ff;
-
   --rkc-space-1: 0.25rem;
   --rkc-space-2: 0.5rem;
   --rkc-space-3: 0.75rem;
   --rkc-space-4: 1rem;
   --rkc-space-5: 1.5rem;
   --rkc-space-6: 2rem;
+  --rkc-space-7: 2.5rem;
+  --rkc-space-8: 3rem;
 
-  --rkc-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --rkc-font-size-xs: 0.75rem;
   --rkc-font-size-sm: 0.875rem;
   --rkc-font-size-md: 1rem;
   --rkc-font-size-lg: 1.125rem;
+  --rkc-font-size-xl: 1.25rem;
   --rkc-line-height: 1.5;
+  --rkc-line-height-tight: 1.25;
 
-  --rkc-radius-sm: 0.375rem;
-  --rkc-radius-md: 0.5rem;
   --rkc-toolbar-height: 3rem;
   --rkc-panel-width: 20rem;
+  --rkc-control-height: 2rem;
+  --rkc-control-padding-x: 0.75rem;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Density: research (compact tooling)                                        */
+/* -------------------------------------------------------------------------- */
 
 .rkc-density-research {
   --rkc-space-1: 0.2rem;
   --rkc-space-2: 0.4rem;
-  --rkc-space-3: 0.6rem;
-  --rkc-space-4: 0.8rem;
+  --rkc-space-3: 0.55rem;
+  --rkc-space-4: 0.75rem;
   --rkc-space-5: 1.1rem;
   --rkc-space-6: 1.5rem;
+  --rkc-space-7: 1.85rem;
+  --rkc-space-8: 2.25rem;
 
+  --rkc-font-size-xs: 0.6875rem;
   --rkc-font-size-sm: 0.8125rem;
   --rkc-font-size-md: 0.9375rem;
   --rkc-font-size-lg: 1.0625rem;
+  --rkc-font-size-xl: 1.125rem;
   --rkc-line-height: 1.4;
+  --rkc-line-height-tight: 1.2;
 
   --rkc-toolbar-height: 2.5rem;
   --rkc-panel-width: 22rem;
+  --rkc-control-height: 1.75rem;
+  --rkc-control-padding-x: 0.55rem;
+  --rkc-canvas-grid-size: 20px;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Reduced motion / high contrast                                             */
+/* -------------------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --rkc-motion-duration-fast: 0ms;
     --rkc-motion-duration: 0ms;
+    --rkc-motion-duration-slow: 0ms;
   }
 }
 
-:root {
-  --rkc-motion-duration: 160ms;
+@media (prefers-contrast: more) {
+  :root,
+  .rkc-theme-dark {
+    --rkc-color-border: #4a5568;
+    --rkc-color-text-muted: #c4cad6;
+    --rkc-focus-ring-width: 3px;
+  }
+
+  .rkc-theme-light {
+    --rkc-color-border: #4a5568;
+    --rkc-color-text-muted: #3a4252;
+    --rkc-focus-ring-width: 3px;
+  }
 }

@@ -18,6 +18,10 @@ export default defineConfig({
         __dirname,
         "../../packages/design-system/src/tokens.css",
       ),
+      "@rkc/design-system/components.css": path.resolve(
+        __dirname,
+        "../../packages/design-system/src/components.css",
+      ),
       "@rkc/design-system": path.resolve(
         __dirname,
         "../../packages/design-system/src/index.ts",

@@ -3,7 +3,7 @@
 ## Slice 1 — Solo infinite canvas
 
 - [x] Monorepo scaffold (pnpm, turbo, CI, Apache-2.0)
-- [ ] Design system tokens + focus/research density
+- [x] Design system tokens + focus/research density
 - [ ] Object model package
 - [ ] Canvas engine spike (WebGL + SVG, pan/zoom, paint logging)
 - [ ] Local persistence (IndexedDB)

@@ -6,3 +6,4 @@ declare module "*.module.scss" {
 }
 
 declare module "@rkc/design-system/tokens.css";
+declare module "@rkc/design-system/components.css";

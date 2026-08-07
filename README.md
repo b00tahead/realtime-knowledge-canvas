@@ -8,7 +8,7 @@ The canvas is the product — not a document editor with a map view bolted on. M
 
 ## Status
 
-**Slice 1 in progress** — solo infinite canvas with performance budgets, accessibility, and offline-first persistence.
+**Slice 1 in progress** — design system landed; next is engine + offline canvas.
 
 | Slice | Goal | Status |
 |-------|------|--------|
@@ -69,7 +69,7 @@ pnpm lint
 |-------|--------|
 | Web | React, TypeScript, Vite |
 | Engine | Custom WebGL + SVG overlay |
-| Styling | Tailwind + SASS modules, shared tokens |
+| Styling | `@rkc/design-system` tokens + components; Tailwind + SASS in web |
 | Local-first | IndexedDB, service workers, background sync |
 | Collab (Slice 2) | WebSockets + Yjs (behind `sync-protocol` adapters) |
 | API | Node/TypeScript BFF |

@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 *,
 *::before,
 *::after {
@@ -14,6 +18,9 @@ body {
   margin: 0;
   background: var(--rkc-color-bg, #0f1115);
   color: var(--rkc-color-text, #e8eaef);
+  font-family: var(--rkc-font-sans);
+  font-size: var(--rkc-font-size-md);
+  line-height: var(--rkc-line-height);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -29,5 +36,5 @@ textarea {
 }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--rkc-font-mono);
 }
